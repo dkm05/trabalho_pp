@@ -52,7 +52,7 @@ int main() {
         // essa string fica com muitos espaços no gcc também
         printf("um exemplo de quebra de linha\
                 fora das macros\
-                        %d\n", N);
+                        %d\n", 10);
 
         /* isso é um
          * comentário multi-linha

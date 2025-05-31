@@ -111,7 +111,7 @@ read_line(FILE *fp, char str[])
                 c = getc(fp);
         }
 
-        str[i] = str[i + 1] = '\0';
+        str[i] = '\0';
 }
 
 int
@@ -131,7 +131,6 @@ main(int argc, char *argv[])
                 die("Erro ao criar o arquivo de saída.");
 
         char str[BUFFER_SIZE] = {'\0'};
-        int i = 0;
         while (!feof(fin)) {
                 read_line(fin, str);
                 remove_comments(str);
@@ -139,6 +138,7 @@ main(int argc, char *argv[])
                 memset(str, '\0', strlen(str));
         }
         fclose(fin);
+        // nao tem problema de fechar stdout aqui
         fclose(fout);
         return(0);
 }
