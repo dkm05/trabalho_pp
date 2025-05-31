@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include "tokens.h"
 
-#define MAX_LINE_LEN 256
+#define BUFFER_SIZE 1024
 #define ARRLEN(arr) (sizeof (arr) / sizeof (arr)[0])
 
 /* global variables */
@@ -21,7 +21,7 @@ void
 organize_buffer(char *str)
 {
         int pos = 0;
-        for (int i = 0; i < MAX_LINE_LEN; i++) {
+        for (int i = 0; i < BUFFER_SIZE; i++) {
                 if (str[i] != '\0') {
                         str[pos++] = str[i];
                         if (i != pos - 1)
@@ -45,12 +45,12 @@ remove_multi_line_comment(char str[], int ini)
                         str[i] = '\0';
                         str[i + 1] = ' ';
                         is_comment = false;
-                        organize_buffer(str);
                         break;
                 } else {
                         str[i] = '\0';
                 }
         }
+        organize_buffer(str);
 }
 
 void
@@ -76,27 +76,69 @@ remove_comments(char str[])
 }
 
 void
-print_line(char str[], FILE *f)
+print_line(FILE *f, char str[])
 {
-        for (int i = 0; str[i] != '\0'; i++)
+        for (int i = 0; str[i] != '\0'; i++) {
                 putc(str[i], f);
+        }
+        /* ficar atento com isso... por enquanto ta aqui para
+         * o output ficar visivel, provavelmente tem q remover
+         * essa linha no final
+         */
         putc('\n', f);
+}
+
+/* obs: dentro das definições das macros
+ * tem q ter o menor número de espaços possivel
+ */
+void
+read_line(FILE *fp, char str[])
+{
+        char c;
+        int i;
+        while ((c = getc(fp)) == ' ')
+                ;
+        for (i = 0; i < BUFFER_SIZE - 1; i++) {
+                if (c == EOF)
+                        break;
+                str[i] = c;
+                if (str[i] == '\n') {
+                        if (i == 0 || str[i - 1] != '\\')
+                                break;
+                        else
+                                i -= 2;
+                }
+                c = getc(fp);
+        }
+
+        str[i] = str[i + 1] = '\0';
 }
 
 int
 main(int argc, char *argv[])
 {
-        if (argc != 2)
-                die("usage: ./main <file.c>");
+        if (argc < 2)
+                die("usage: ./main <input.c> [<output>]");
 
         FILE *fin = fopen(argv[1], "r");
-        char str[256] = {'\0'}, c;
+        FILE *fout = stdout;
+
+        if (argc == 3)
+                fout = fopen(argv[2], "w");
+        if (!fin)
+                die("Erro ao abrir o arquivo de entrada.");
+        if (!fout)
+                die("Erro ao criar o arquivo de saída.");
+
+        char str[BUFFER_SIZE] = {'\0'};
+        int i = 0;
         while (!feof(fin)) {
-                fscanf(fin, " %255[^\n]%c", str, &c);
+                read_line(fin, str);
                 remove_comments(str);
-                print_line(str, stdout);
-                memset(str, '\0', ARRLEN(str));
+                print_line(fout, str);
+                memset(str, '\0', strlen(str));
         }
         fclose(fin);
-        return 0;
+        fclose(fout);
+        return(0);
 }
