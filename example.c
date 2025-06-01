@@ -12,17 +12,15 @@
  * para confirmar que o codigo ta valido
  */
 
-#include <stdio.h>
-
-#/*zzz*/define /*lol*/ N /*dnv*/ 10
 
 #define EX for(int i = 0; i < 10; i++) \
 i += 2;\
 
+#include <stdio.h>
 /* esse exemplo ta aqui para testar a continuação da linha com '\' */
 /* fonte: https://git.suckless.org/st/file/arg.h.html */
 #define ARGBEGIN	for (argv0 = *argv, argv++, argc--;\
-					argv[0] && argv[0][0] == '-'\
+			                argv[0] && argv[0][0] == '-'\
 					&& argv[0][1];\
 					argc--, argv++) {\
 				char argc_;\
@@ -42,13 +40,13 @@ i += 2;\
 					switch (argc_)
 #define ARGEND			}\
                         }
-
 int main() {
         // esse é o primeiro comentário //
         printf ( " \n " ) ;
         int     a;
         //isso é outro comentário /**///
 
+        int arg = 0;
         // essa string fica com muitos espaços no gcc também
         printf("um exemplo de quebra de linha\
                 fora das macros\
@@ -57,9 +55,6 @@ int main() {
         /* isso é um
          * comentário multi-linha
          */
-        int/*
-              aa
-        */arg = 0;
         /*****************************************
          * isso é outro comentário multi-linha   *
         *****************************************/
