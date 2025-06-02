@@ -5,13 +5,13 @@
 #include <ctype.h>
 #include "tokens.h"
 
-#define BUFFER_SIZE 1024
-#define ARRLEN(arr) (sizeof (arr) / sizeof (arr)[0])
-#define BETWEEN(a, b, c) (((a) >= (b)) && ((a) <= (c)))
+#define BUFFER_SIZE 10240
 
 /* global variables */
 bool is_comment = false;
 bool is_string = false;
+
+void remove_trailling_space(char str[], int i);
 
 void
 die(const char *str)
@@ -125,16 +125,18 @@ ignore_until_end_comment(FILE *fp)
 }
 
 void
-read_directive_line(FILE *fp, char str[], int i)
+read_line_of_code(FILE *fp, char str[], int i)
 {
-        char c;
-        while ((c = getc(fp))) {
-                if (!isspace(c))
-                        break;
-        }
+        char c = getc(fp);
+        if (c == EOF)
+                return;
         str[i++] = c;
-        while (((c = getc(fp)) != '\n') && i < BUFFER_SIZE) {
-                if (str[i - 1] == '/') {
+        while ((c = getc(fp)) != '\n') {
+                if (isspace(c))
+                        c = ' ';
+                if (is_quote(str, i, c))
+                        is_string = !is_string;
+                if (i && str[i - 1] == '/' && !is_string) {
                         if (c == '/') {
                                 str[i - 1] = ' ';
                                 ignore_until_newline(fp);
@@ -150,62 +152,13 @@ read_directive_line(FILE *fp, char str[], int i)
         str[i] = c;
         if (line_splicing(str, i)) {
                 str[i - 1] = str[i] = '\0';
-                read_directive_line(fp, str, i - 1);
-        }
-}
-
-void
-read_line_of_code(FILE *fp, char str[], int i)
-{
-        char c;
-        for (; i < BUFFER_SIZE - 1; i++) {
-                c = getc(fp);
-                if (isblank(c)) {
-                        c = ' ';
-                } else if (is_quote(str, i, c)) {
-                        is_string = !is_string;
-                } else if (i && str[i - 1] == '/' && !is_string) {
-                        if (c == '/') {
-                                str[i - 1] = ' ';
-                                ignore_until_newline(fp);
-                                continue;
-                        } else if (c == '*') {
-                                str[i - 1] = ' ';
-                                ignore_until_end_comment(fp);
-                                continue;
-                        }
-                }
-                str[i] = c;
-        }
-        str[i] = c;
-        if (line_splicing(str, i)) {
-                str[i - 1] = str[i] = '\0';
                 read_line_of_code(fp, str, i - 1);
         }
-}
-
-/* obs: dentro das definições das macros
- * tem q ter o menor número de espaços possivel
- */
-/*
-void
-read_line(FILE *fp, char str[])
-{
-        char c;
-        while ((c = getc(fp))) {
-                // talvez isspace
-                if (!isspace(c))
-                        break;
+        else if (isalnum(str[i - 1])) {
+                str[i] = ' ';
+                read_line_of_code(fp, str, i + 1);
         }
-        if (c == EOF)
-                return;
-        str[0] = c;
-        if (c == '#')
-                read_directive_line(fp, str, 1);
-        else
-                read_line_of_code(fp, str);
 }
-*/
 
 void
 remove_whitespace(char str[])
@@ -216,7 +169,6 @@ remove_whitespace(char str[])
                 // ' '
                 bool is_space_char = i && str[i - 1] == '\'' && str[i + 1] == '\'';
                 if (!is_space_char && str[i] == ' ' && !is_string) {
-                        //printf("-----%c-----\n", str[i]);
                         bool before = i && (isalnum(str[i - 1]) ||
                                         str[i - 1] == '_');
                         bool next = isalnum(str[i + 1]) || 
@@ -224,6 +176,28 @@ remove_whitespace(char str[])
                         if (!(before && next))
                                 str[i] = '\0';
                 }
+                if (str[i] == '\n') str[i] = '\0';
+        }
+        organize_buffer(str);
+}
+
+void
+remove_trailling_space(char str[], int i)
+{
+        bool flag = true;
+        while (flag) {
+                if (isspace(str[i]))
+                        str[i++] = '\0';
+                else
+                        flag = false;
+
+        }
+        while (str[i] != '\0') {
+                if (is_quote(str, i, str[i]))
+                        is_string = !is_string;
+                if (!is_string && str[i] == ' ' && str[i + 1] == ' ')
+                        str[i] = '\0';
+                i++;
         }
         organize_buffer(str);
 }
@@ -237,7 +211,7 @@ main(int argc, char *argv[])
         FILE *fin = fopen(argv[1], "r");
         FILE *fout = stdout;
 
-        if (argc == 3)
+        if (argc >= 3)
                 fout = fopen(argv[2], "w");
         if (!fin)
                 die("Erro ao abrir o arquivo de entrada.");
@@ -247,8 +221,10 @@ main(int argc, char *argv[])
         char str[BUFFER_SIZE] = {'\0'};
         while (!feof(fin)) {
                 read_line_of_code(fin, str, 0);
-                remove_comments(str);
-                remove_whitespace(str);
+                remove_trailling_space(str, 0);
+                if (str[0] != '#') {
+                        remove_whitespace(str);
+                }
                 print_line(fout, str);
                 memset(str, '\0', strlen(str));
         }

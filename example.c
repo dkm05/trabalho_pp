@@ -11,12 +11,14 @@
 /* esse exemplo tem que ser compilado no gcc,
  * para confirmar que o codigo ta valido
  */
-
-
-#define EX for(int i = 0; i < 10; i++) \
-i += 2;\
+#define EX for(int i = 0; i < 10; i++)\
+i += 2;
 
 #include <stdio.h>
+
+
+
+
 /* esse exemplo ta aqui para testar a continuação da linha com '\' */
 /* fonte: https://git.suckless.org/st/file/arg.h.html */
 #define ARGBEGIN	for (argv0 = *argv, argv++, argc--;\
@@ -45,10 +47,12 @@ int main() {
         printf ( " \n " ) ;
         int     a;
         //isso é outro comentário /**///
+        int cc, dd = 0; 
+        dd &= ~(1 << 24);
 
         int arg = 0;
         // essa string fica com muitos espaços no gcc também
-        printf("um exemplo de quebra de linha\
+        printf("um    exemplo    de quebra de linha\
                 fora das macros\
                         %d\n", 10);
 
