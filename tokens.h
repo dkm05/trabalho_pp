@@ -1,6 +1,27 @@
 #ifndef TOKENS_H
 #define TOKENS_H
 
+const char *operators[] = {
+        "+=",
+        "-=",
+        "*=",
+        "/=",
+        "%=",
+        "^=",
+        "&=",
+        "|=",
+        "<<",
+        ">>",
+        "<=",
+        ">=",
+        "==",
+        "!=",
+        "&&",
+        "||",
+        "++",
+        "--",
+        "->",
+};
 const char *keywords[] = {
         "auto",
         "break",

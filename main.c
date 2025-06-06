@@ -5,13 +5,14 @@
 #include <ctype.h>
 #include "tokens.h"
 
-#define BUFFER_SIZE 10240
+// futuramente o buffer pode ficar na heap
+#define BUFFER_SIZE 1024
+// pensar em um nome
+#define ARRLEN(arr) (sizeof(arr) / sizeof(arr[0]))
+#define is_token_char(c) (isalnum(c) || (c) == '_')
 
 /* global variables */
-bool is_comment = false;
 bool is_string = false;
-
-void remove_trailling_space(char str[], int i);
 
 void
 die(const char *str)
@@ -20,6 +21,7 @@ die(const char *str)
         exit(EXIT_FAILURE);
 }
 
+// pode ser macro
 bool
 is_quote(char str[], int i, char c)
 {
@@ -40,64 +42,14 @@ organize_buffer(char *str)
 }
 
 void
-remove_single_line_comment(char str[], int ini)
-{
-        str[ini] = ' ';
-        for (int i = ini + 1; str[i] != '\0'; i++)
-                str[i] = '\0';
-}
-
-void
-remove_multi_line_comment(char str[], int ini)
-{
-        for (int i = ini; str[i] != '\0'; i++) {
-                if (str[i] == '*' && str[i + 1] == '/') {
-                        str[i] = ' ';
-                        str[i + 1] = '\0';
-                        is_comment = false;
-                        break;
-                } else {
-                        str[i] = '\0';
-                }
-        }
-        organize_buffer(str);
-}
-
-void
-remove_comments(char str[])
-{
-        if (is_comment)
-                remove_multi_line_comment(str, 0);
-
-        for (int i = 0; str[i] != '\0'; i++) {
-                if (is_quote(str, i, str[i]))
-                        is_string = !is_string;
-
-                if (!is_string && str[i] == '/') {
-                        if (str[i + 1] == '/')
-                                remove_single_line_comment(str, i);
-                        else if (str[i + 1] == '*') {
-                                str[i] = ' ';
-                                is_comment = true;
-                                remove_multi_line_comment(str, i);
-                        }
-                }
-        }
-}
-
-void
 print_line(FILE *f, char str[])
 {
         for (int i = 0; str[i] != '\0'; i++) {
                 putc(str[i], f);
         }
-        /* ficar atento com isso... por enquanto ta aqui para
-         * o output ficar visivel, provavelmente tem q remover
-         * essa linha no final
-         */
-       //putc('\n', f);
 }
 
+// da p implementar as proximas 3 funções como macros
 bool
 line_splicing(char str[], int i)
 {
@@ -115,25 +67,100 @@ ignore_until_newline(FILE *fp)
 void
 ignore_until_end_comment(FILE *fp)
 {
-        char c1;
-        while ((c1 = getc(fp))) {
-                if (c1 == '*') {
-                        if ((c1 = getc(fp)) == '/')
-                                break;
-                }
+        char c, ant = '\0';
+        while ((c = getc(fp))) {
+                if (c == '/' && ant == '*')
+                        break;
+                ant = c;
         }
 }
 
-void
-read_line_of_code(FILE *fp, char str[], int i)
+/* retorna true se a junção de 2 chars
+ * formam um novo token
+ */
+bool
+is_new_token(char c1, char c2)
 {
-        char c = getc(fp);
-        if (c == EOF)
-                return;
-        str[i++] = c;
-        while ((c = getc(fp)) != '\n') {
-                if (isspace(c))
-                        c = ' ';
+        if (is_token_char(c1) && is_token_char(c2))
+                return true;
+        
+        char token[3] = {c1, c2, '\0'};
+        // existem formas melhores de fazer isso
+        // (hash table talvez?)
+        for (int i = 0; i < ARRLEN(operators); i++) {
+                if (!strcmp(token, operators[i]))
+                        return true;
+        }
+
+        return false;
+}
+
+void
+process_directive(char str[], int *i)
+{
+        /* pode pegar o diretorio ate achar um newline
+         * (de preferencia fazendo line_splicing no caminho)
+         * e colocar em uma string (ou ir processando enquanto le)
+         * o ideal é encher de '\0' pra remover a linha do arquivo
+         *
+         * OU
+         *
+         * passa a string já pronta pra essa função
+         */
+        int j;
+        for (j = *i; str[j] != '\n'; j++) {
+                str[j] = '\0';
+        }
+        str[j] = '\0';
+        *i = j;
+}
+
+void
+process_file(char str[])
+{
+        int col = 0;
+        char c;
+        for (int i = 0; str[i] != '\0'; i++) {
+                if (col == 0) {
+                        // ignora espaco no comeco da linha
+                        if (isspace(str[i])) {
+                                str[i] = '\0';
+                                continue;
+                        } else if (str[i] == '#') {
+                                /* se passar a string do diretorio
+                                 * pronta por essa função, talvez
+                                 * não precise passar por referência
+                                 */
+                                process_directive(str, &i);
+                                col = 0;
+                                continue;
+                        }
+                }
+                if (isspace(str[i]) && i) {
+                        if (is_new_token(str[i - 1], str[i + 1]))
+                                continue;
+                        else
+                                str[i] = '\0';
+                }
+                if (str[i] == '\n') {
+                        col = 0;
+                } else {
+                        col++;
+                }
+        }
+        organize_buffer(str);
+}
+
+/* ideia: coloca todo o arquivo dentro de uma string
+ * e remove os comentarios no processo
+ * (bonus: nao é o ideal mas pode fazer o line_splicing aqui)
+ */
+void
+read_file(FILE *fp, char str[])
+{
+        char c;
+        int i = 0;
+        while ((c = getc(fp)) != EOF) {
                 if (is_quote(str, i, c))
                         is_string = !is_string;
                 if (i && str[i - 1] == '/' && !is_string) {
@@ -146,60 +173,15 @@ read_line_of_code(FILE *fp, char str[], int i)
                                 ignore_until_end_comment(fp);
                                 continue;
                         }
+                } 
+                if (line_splicing(str, i)) {
+                        str[i - 1] = str[i] = 'A';
+                        i--;
+                        continue;
                 }
                 str[i++] = c;
         }
-        str[i] = c;
-        if (line_splicing(str, i)) {
-                str[i - 1] = str[i] = '\0';
-                read_line_of_code(fp, str, i - 1);
-        }
-        else if (isalnum(str[i - 1])) {
-                str[i] = ' ';
-                read_line_of_code(fp, str, i + 1);
-        }
-}
-
-void
-remove_whitespace(char str[])
-{
-        for (int i = 0; str[i] != '\0'; i++) {
-                if (is_quote(str, i, str[i]))
-                        is_string = !is_string;
-                // ' '
-                bool is_space_char = i && str[i - 1] == '\'' && str[i + 1] == '\'';
-                if (!is_space_char && str[i] == ' ' && !is_string) {
-                        bool before = i && (isalnum(str[i - 1]) ||
-                                        str[i - 1] == '_');
-                        bool next = isalnum(str[i + 1]) || 
-                                    str[i + 1] == '_';
-                        if (!(before && next))
-                                str[i] = '\0';
-                }
-                if (str[i] == '\n') str[i] = '\0';
-        }
-        organize_buffer(str);
-}
-
-void
-remove_trailling_space(char str[], int i)
-{
-        bool flag = true;
-        while (flag) {
-                if (isspace(str[i]))
-                        str[i++] = '\0';
-                else
-                        flag = false;
-
-        }
-        while (str[i] != '\0') {
-                if (is_quote(str, i, str[i]))
-                        is_string = !is_string;
-                if (!is_string && str[i] == ' ' && str[i + 1] == ' ')
-                        str[i] = '\0';
-                i++;
-        }
-        organize_buffer(str);
+        str[i] = '\0';
 }
 
 int
@@ -210,6 +192,7 @@ main(int argc, char *argv[])
 
         FILE *fin = fopen(argv[1], "r");
         FILE *fout = stdout;
+        char str[BUFFER_SIZE] = {'\0'};
 
         if (argc >= 3)
                 fout = fopen(argv[2], "w");
@@ -218,16 +201,9 @@ main(int argc, char *argv[])
         if (!fout)
                 die("Erro ao criar o arquivo de saída.");
 
-        char str[BUFFER_SIZE] = {'\0'};
-        while (!feof(fin)) {
-                read_line_of_code(fin, str, 0);
-                remove_trailling_space(str, 0);
-                if (str[0] != '#') {
-                        remove_whitespace(str);
-                }
-                print_line(fout, str);
-                memset(str, '\0', strlen(str));
-        }
+        read_file(fin, str);
+        process_file(str);
+        print_line(fout, str);
         fclose(fin);
         // nao tem problema de fechar stdout aqui
         fclose(fout);
