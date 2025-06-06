@@ -7,7 +7,7 @@
 #include "hashmap.h"
 
 
-// futuramente o buffer pode ficar na heap
+// futuramente o buffer tem que ficar na heap
 #define BUFFER_SIZE 10240
 // pensar em um nome
 #define ARRLEN(arr) ((int) (sizeof(arr) / sizeof(arr[0])))
@@ -171,14 +171,13 @@ remove_comments(char str[])
                         if (str[i] == '/') {
                                 str[i - 1] = ' ';
                                 ignore_until_newline(str, &i);
-                                continue;
                         } else if (str[i] == '*') {
                                 str[i - 1] = ' ';
                                 ignore_until_end_comment(str, &i);
-                                continue;
                         }
                 } 
         }
+        organize_buffer(str);
 }
 
 void
@@ -307,7 +306,7 @@ main(int argc, char *argv[])
 
         read_file(fin, str);
         remove_comments(str);
-        process_file(str);
+        //process_file(str);
         print_line(fout, str);
         fclose(fin);
         // nao tem problema de fechar stdout aqui

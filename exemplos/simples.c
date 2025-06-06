@@ -1,8 +1,10 @@
+#/**/define/***/N 10 // ...
+// .......
 // ...
-#/**/define /***/ N /**/10
-int/**/main() {// aaaaaaaa
-        int a, b, /*
+int/****/main() {
+        int a, b,/******
 
         */c, d;
-        return/*****/0;
+        char e/****/[] = "/***/";
+        return 0;
 }
