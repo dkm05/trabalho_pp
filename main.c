@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include <ctype.h>
 #include "tokens.h"
+#include "hashmap.h"
+
 
 // futuramente o buffer pode ficar na heap
 #define BUFFER_SIZE 1024
@@ -11,8 +13,10 @@
 #define ARRLEN(arr) (sizeof(arr) / sizeof(arr[0]))
 #define is_token_char(c) (isalnum(c) || (c) == '_')
 
+
 /* global variables */
 bool is_string = false;
+
 
 void
 die(const char *str)
@@ -182,6 +186,97 @@ read_file(FILE *fp, char str[])
                 str[i++] = c;
         }
         str[i] = '\0';
+}
+// quando ler um #, passa a posição do # no i, e a string
+bool is_macro(int i,const char str[]){
+        char aux[7];
+        int k;
+        for(k=0;k<6;k++){
+                aux[k]=str[(i+1)+k];
+        }
+        if(!strcmp(aux,"define")){
+                return true;
+        }
+        return false;
+}
+// i é a posição do primeiro char do macro
+bool is_simple_macro(int i,const char str[]){
+        int k=0;
+        while(str[i+k] != ' ' && str[i+k] != '('){
+                k++;
+        }
+        if(str[i+k] == '('){
+                return false;
+        }
+        return true;
+}
+// assume que i é a posição do primeiro char do macro
+void save_macro(const char arq[], int i, const char str[]){
+        int k=0;
+        int j=0;
+        Macro temp;
+        temp.disponibilidade = OCUPADO;
+        if(is_simple_macro(i,str)){
+                temp.simples=1;
+                temp.qtd_param=0;
+                while(str[i+k]!=' '){
+                        temp.id[j]=str[i+k];
+                        k++;j++;
+                }
+                k++; // pula o ' '
+                temp.id[j]='\0';
+                j=0;
+                while (str[i+k] != ' ' && str[i+k] != '\n'){
+                        temp.value[j]=str[i+k];
+                        k++;j++;
+                }
+                temp.value[j]='\0';
+                inserir(arq,temp);
+                
+        }else{
+                temp.simples=0;
+                temp.qtd_param=1;
+                while(str[i+k]!='(' ){
+                        temp.id[j]=str[i+k];
+                        k++;j++;
+                }
+                temp.id[j]='\0';
+                k++;    // pula o "("
+                int aux =k;
+                while(str[i+k]!=')' && str[i + k] != '\0' ){
+                        if(str[i+k] == ','){
+                                temp.qtd_param++;
+                                k++;
+                        }
+                }
+                k=aux;
+                temp.parametros = malloc(sizeof(char *) * temp.qtd_param);
+                char parametrotemp[BUFFER_SIZE]={'\0'};
+                j=0;            //pos em parametros
+                int n=0;        //parametro n
+                while(str[i+k]!=')' ){
+                        if(str[i+k] != ','){
+                                parametrotemp[j]=str[i+k];
+                                k++;j++;
+                        }else{
+                                parametrotemp[j]='\0';
+                                temp.parametros[n]= strdup(parametrotemp);
+                                memset(parametrotemp, 0, sizeof(parametrotemp));
+                                k++;n++;j=0;    //vai ler o novo parametro;
+                        }
+                }
+                parametrotemp[j]='\0';
+                temp.parametros[n]= strdup(parametrotemp);
+                k++;    //pula ')'
+                j=0;    //pos do corpo
+                while (str[i + k] == ' ') k++;  //pula espaços
+                while (str[i + k] != '\0' && str[i + k] != '\n' && str[i + k] != ' ') {
+                        temp.value[j++] = str[i + k++];
+                }
+                temp.value[j] = '\0';
+
+                inserir(arq, temp);
+        }
 }
 
 int
