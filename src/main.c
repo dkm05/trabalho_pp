@@ -9,14 +9,12 @@
 
 // futuramente o buffer tem que ficar na heap
 #define BUFFER_SIZE 10240
-// pensar em um nome
 #define ARRLEN(arr) ((int) (sizeof(arr) / sizeof(arr[0])))
+// pensar em um nome
 #define is_token_char(c) (isalnum(c) || (c) == '_')
-
 
 /* global variables */
 bool is_string = false;
-
 
 void
 die(const char *str)
@@ -27,7 +25,7 @@ die(const char *str)
 
 // pode ser macro
 bool
-is_quote(char str[], int i, char c)
+is_quote(char c1, int i, char c)
 {
         return i && c == '"' && str[i - 1] != '\'' && str[i - 1] != '\\';
 }
@@ -55,9 +53,9 @@ print_line(FILE *f, char str[])
 
 // da p implementar as proximas 3 funções como macros
 bool
-line_splicing(char str[], int i)
+line_splicing(char c1, char c2)
 {
-        return str[i - 1] == '\\';
+        return c1 == '\\' && c2 == '\n';
 }
 
 void
@@ -121,41 +119,6 @@ process_directive(char str[], int *i)
         *i = j;
 }
 
-void
-process_file(char str[])
-{
-        int col = 0;
-        for (int i = 0; str[i] != '\0'; i++) {
-                if (col == 0) {
-                        // ignora espaco no comeco da linha
-                        if (isspace(str[i])) {
-                                str[i] = '\0';
-                                continue;
-                        } else if (str[i] == '#') {
-                                /* se passar a string do diretorio
-                                 * pronta por essa função, talvez
-                                 * não precise passar por referência
-                                 */
-                                process_directive(str, &i);
-                                col = 0;
-                                continue;
-                        }
-                }
-                if (isspace(str[i]) && i) {
-                        if (is_new_token(str[i - 1], str[i + 1]))
-                                continue;
-                        else
-                                str[i] = '\0';
-                }
-                if (str[i] == '\n') {
-                        col = 0;
-                } else {
-                        col++;
-                }
-        }
-        organize_buffer(str);
-}
-
 /* ideia: coloca todo o arquivo dentro de uma string
  * e remove os comentarios no processo
  * (bonus: nao é o ideal mas pode fazer o line_splicing aqui)
@@ -186,8 +149,7 @@ read_file(FILE *fp, char str[])
         char c;
         int i = 0;
         while ((c = getc(fp)) != EOF) {
-                if (line_splicing(str, i)) {
-                        str[i - 1] = str[i] = 'A';
+                if (i && line_splicing(str[i - 1], c)) {
                         i--;
                         continue;
                 }
@@ -195,6 +157,20 @@ read_file(FILE *fp, char str[])
         }
         str[i] = '\0';
 }
+
+void
+remove_trailling_space(char str[])
+{
+        for (int i = 1; str[i] != '\0'; i++) {
+                // o que acontece se str[0] = '"'?
+                if (is_quote(str, i, str[i]))
+                        is_string = !is_string;
+                if (!is_string && isspace(str[i]) && isspace(str[i - 1]))
+                        str[i - 1] = '\0';
+        }
+        organize_buffer(str);
+}
+
 // quando ler um #, passa a posição do # no i, e a string
 bool is_macro(int i,const char str[]){
         char aux[7];
@@ -270,7 +246,6 @@ void save_macro(const char arq[], int i, const char str[]){
                                 parametrotemp[j]='\0';
                                 temp.parametros[n]= strdup(parametrotemp);
                                 memset(parametrotemp, 0, sizeof(parametrotemp));
-                                k++;n++;j=0;    //vai ler o novo parametro;
                         }
                 }
                 parametrotemp[j]='\0';
@@ -285,6 +260,40 @@ void save_macro(const char arq[], int i, const char str[]){
 
                 inserir(arq, temp);
         }
+}
+
+void
+remove_space(char str[])
+{
+        remove_trailling_space(str);
+        int col = 0;
+        // tem q tomar cuidado pra nao indexar fora do array
+        // nesses i + 1 ou i - 1...
+        for (int i = 0; str[i] != '\0'; i++) {
+                if (is_quote(str, i, str[i]))
+                        is_string = !is_string;
+                bool is_space_now = isspace(str[i]);
+                if (!is_string) {
+                        if (col == 0) {
+                                // ignora espaco no comeco da linha
+                                if (is_space_now) {
+                                        str[i] = '\0';
+                                        continue;
+                                }
+                        } else if (i && is_space_now) {
+                                if (is_new_token(str[i - 1], str[i + 1]))
+                                        continue;
+                                else
+                                        str[i] = '\0';
+                        }
+                } 
+                if (str[i] == '\n') {
+                        col = 0;
+                } else {
+                        col++;
+                }
+        }
+        organize_buffer(str);
 }
 
 int
@@ -306,7 +315,7 @@ main(int argc, char *argv[])
 
         read_file(fin, str);
         remove_comments(str);
-        //process_file(str);
+        remove_space(str);
         print_line(fout, str);
         fclose(fin);
         // nao tem problema de fechar stdout aqui

@@ -47,7 +47,9 @@ int main() {
         printf ( " \n " ) ;
         int     a;
         //isso é outro comentário /**///
-        int cc, dd = 0; 
+        int cc    =     1, dd = 0; 
+        a = c++     +      ++d;
+        a = c++ + ++d;
         dd &= ~(1 << 24);
 
         int arg = 0;
@@ -64,6 +66,8 @@ int main() {
         *****************************************/
 
         char b = '\0';
+        char c = '\n';
+        char d = '\\';
 
         /* ... */ printf("1 + 1 = %d\n", 1/**/+1); // ...
         /**/ printf("/*..*/%d\n", arg ? /* isso */ 1 : /* ou aquilo */ 2)/* .. */;
