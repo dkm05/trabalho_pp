@@ -16,6 +16,17 @@ i += 2;
 
 #include <stdio.h>
 
+#\
+d\
+e\
+f\
+i\
+n\
+e\
+ A\
+\
+ 2\
+0
 
 
 
@@ -48,8 +59,8 @@ int main() {
         int     a;
         //isso é outro comentário /**///
         int cc    =     1, dd = 0; 
-        a = c++     +      ++d;
-        a = c++ + ++d;
+        a = cc++     +      ++dd;
+        a = cc++ + ++dd;
         dd &= ~(1 << 24);
 
         int arg = 0;
