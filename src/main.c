@@ -6,7 +6,7 @@
 #include "tokens.h"
 #include "hashmap.h"
 
-
+void remove_space(char str[]);
 // futuramente o buffer tem que ficar na heap
 #define BUFFER_SIZE 10240
 #define ARRLEN(arr) ((int) (sizeof(arr) / sizeof(arr[0])))
@@ -25,9 +25,9 @@ die(const char *str)
 
 // pode ser macro
 bool
-is_quote(char c1, int i, char c)
+is_quote(char c1[], int i, char c)
 {
-        return i && c == '"' && str[i - 1] != '\'' && str[i - 1] != '\\';
+        return i && c == '"' && c1[i - 1] != '\'' && c1[i - 1] != '\\';
 }
 
 void
@@ -175,11 +175,21 @@ remove_trailling_space(char str[])
 bool is_macro(int i,const char str[]){
         char aux[7];
         int k;
-        for(k=0;k<6;k++){
-                aux[k]=str[(i+1)+k];
+        if(i == 0){
+                for(k=0;k<6;k++){
+                        aux[k]=str[(i+1)+k];
+                }
+                if(strcmp(aux,"define")==0){
+                        return true;
+                }
         }
-        if(!strcmp(aux,"define")){
-                return true;
+        if(i > 0 && str[i-1] == '\n'){
+                for(k=0;k<6;k++){
+                        aux[k]=str[(i+1)+k];
+                }
+                if(strcmp(aux,"define") == 0){
+                        return true;
+                }
         }
         return false;
 }
@@ -215,6 +225,7 @@ void save_macro(const char arq[], int i, const char str[]){
                         k++;j++;
                 }
                 temp.value[j]='\0';
+                printf("%s",temp.value);        //teste
                 inserir(arq,temp);
                 
         }else{
@@ -295,6 +306,24 @@ remove_space(char str[])
         }
         organize_buffer(str);
 }
+//acha macros, escreve eles num hash, e apaga da string substituindo os caracteres por \0
+void find_macros(const char *arq,char str[]){
+      int i=0;
+      int length = (int)strlen(str);  
+      //char aux[BUFFER_SIZE]={'\0'};
+      for(i=0;i<length;i++){
+        if(str[i] == '#' && i != 0 ){
+                if(is_macro(i,str)){
+                        save_macro(arq,i,str);
+                        while(str[i]!='\n'){
+                                str[i]='\0';
+                                i++;                    //tira os defines do arquivo
+                        }
+                }
+        }
+
+      }
+}
 
 int
 main(int argc, char *argv[])
@@ -304,6 +333,8 @@ main(int argc, char *argv[])
 
         FILE *fin = fopen(argv[1], "r");
         FILE *fout = stdout;
+        char arquivo[]="hashmap.bin";
+        inicializar(arquivo);
         char str[BUFFER_SIZE] = {'\0'};
 
         if (argc >= 3)
@@ -316,6 +347,7 @@ main(int argc, char *argv[])
         read_file(fin, str);
         remove_comments(str);
         remove_space(str);
+        find_macros(arquivo,str);
         print_line(fout, str);
         fclose(fin);
         // nao tem problema de fechar stdout aqui

@@ -5,15 +5,11 @@
 #include "hashmap.h"
 
 void inicializar(const char *arquivo) {
-    FILE *arq = fopen(arquivo, "rb");
-    // se existe, assume que tem dados do registro
-    if (!arq) {
-        arq = fopen(arquivo, "w+b");
-        Macro a;
-        a.disponibilidade = LIVRE;
-        for (int i = 0; i < HASHMAP_SIZE; i++) {
-            fwrite(&a, sizeof(Macro), 1, arq);
-        }
+    FILE * arq = fopen(arquivo, "w+b");
+    Macro a;
+    a.disponibilidade = LIVRE;
+    for (int i = 0; i < HASHMAP_SIZE; i++) {
+        fwrite(&a, sizeof(Macro), 1, arq);
     }
     fclose(arq);
 }
