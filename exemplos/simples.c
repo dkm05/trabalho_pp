@@ -1,13 +1,5 @@
-    
-#define __A__ (for     int(     i_   = 0; i_ <= 10; i ++))\
-                                   i  + = +10;
-#define __B__ for      int
-
-// #define A 10
-// #define B 20
-// # define C 30
-#  define N 10 // ...
 #define troca(a,x) {int aux =x;x=a; a=aux;}
+
 // .......
 // ...
             int/****/               main() {

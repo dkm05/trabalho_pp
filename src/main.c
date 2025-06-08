@@ -307,7 +307,8 @@ void save_macro(int i, const char str[]){
                                         parametrotemp[j++]='\0';
                                 }
                                 puts("macro com parametros 9");
-                                temp->parametros[n]= strdup(parametrotemp);
+                                temp->parametros[n]= calloc(4096, sizeof(char));
+                                strcpy(temp->parametros[n], parametrotemp);
                                 printf("parametrotemp salvo no vetor: %s\n",temp->parametros[n]);
                                 n++;
                                 memset(parametrotemp, 0, sizeof(parametrotemp));
@@ -321,7 +322,8 @@ void save_macro(int i, const char str[]){
                         parametrotemp[j++]='\0';
                 }
                 puts("macro com parametros 12");
-                temp->parametros[n]= strdup(parametrotemp);
+                temp->parametros[n]= calloc(4096, sizeof(char));
+                strcpy(temp->parametros[n], parametrotemp);
                 k++;    //pula ')'
                 j=0;    //pos do corpo
                 puts("macro com parametros 13");
@@ -410,36 +412,41 @@ remove_space(char str[])
 
 
 void
-get_name(char str[], size_t len)
+get_name(char dest[], char str[], size_t len)
 {
-        if (isdigit(str[0]))
+        if (isdigit(str[0])) {
+                dest[0] = '\0';
                 return;
-        char word[len + 1];
-        memcpy(word, str, len);
-        word[len] = '\0';
-        // talvez podemos usar o atoll
-        // ja que o '.' não é um caractere valido
-        // para nomear um token
-        double d = atof(word);
-        // if (!d)
-        //         printf(" get name: \n%s\n", word);
+        }
+        // olhar se o tamanho é maior...
+        memcpy(dest, str, len);
+        dest[len] = '\0';
 }
 
 void
 substituir_macros(char str[])
 {
         size_t word_len = 0, len = strlen(str);
+        char word[64] = {'\0'};
         for (size_t i = 0; i < len; i++) {
                 if (is_string(str, i))
                         continue;
                 if (is_token_char(str[i])) {
                         word_len++;
                 } else if (word_len > 0) {
-                        get_name(str + i - word_len, word_len);
+                        get_name(word, str + i - word_len, word_len);
+                        printf("aux: %s\n", word);
+                        // joga esse loop em uma função
+                        for (int j = 0; j < numero_de_macros; j++) {
+                        if (!strcmp(word,vetor_macro[j]->id)){       //fazer a substituição de valor
+                                printf("macro %s achado\n", word);
+                                }
+                        }
                         word_len = 0;
                 }
         }
 }
+
 //acha macros,salva no vetor_macro, e apaga da string substituindo os caracteres por \0
 void find_macros_leitura(char str[]){
         puts("ok 1");
@@ -461,7 +468,6 @@ void find_macros_leitura(char str[]){
                                         aux++;                    //tira os defines do arquivo
                                 }
                                 puts("ok 5,5");
-                                organize_buffer(str);
                                 puts("ok 6");
                                 //printf("%s",str);
                         }//else if(is_include(i,str)){
@@ -469,6 +475,7 @@ void find_macros_leitura(char str[]){
                         // }
                 }
         }
+        organize_buffer(str);
 }
 void free_macro(){
         for (int i = 0; i < numero_de_macros; i++) {
@@ -494,10 +501,6 @@ void substituir_macros_final(char str[]){
                 while (k<length){
                         if(!is_token_char(str[k])){
                                 //printf("achou um \"%c\"\n",str[k]);
-                                printf("aux: %s\n", aux);
-                                if(strcmp(aux,vetor_macro[i]->id) == 0 ){       //fazer a substituição de valor
-                                        printf("macro %s achado\n", aux);
-                                }
                                 memset(aux,0,sizeof(aux));
                                 pos=0;
                                 k++;    //pular caracter nao desejado
@@ -509,7 +512,6 @@ void substituir_macros_final(char str[]){
                 memset(aux,0,sizeof(aux));
                 k=0;
                 pos=0;
-                
         }
 }
 
@@ -542,11 +544,11 @@ main(int argc, char *argv[])
         //         printf("%c",str[z]);
         // }
 
-        substituir_macros_final(str);
-        puts("ok main 5");
-
         remove_space(str);
         puts("ok main 6");
+
+        substituir_macros(str);
+        puts("ok main 5");
         
         print_line(fout, str);
         puts("ok main 7");
@@ -558,8 +560,7 @@ main(int argc, char *argv[])
                 if(vetor_macro[i]->qtd_param>0){
                         
                         for(int j=0;j<vetor_macro[i]->qtd_param;j++){
-                               
-                                //remove_space(vetor_macro[i]->parametros[j]);
+                                remove_space(vetor_macro[i]->parametros[j]);
                                 printf("parametro[%d]: %s\n",j,vetor_macro[i]->parametros[j]);
                 }
                 }
