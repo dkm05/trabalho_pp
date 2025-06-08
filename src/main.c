@@ -19,9 +19,9 @@ void remove_space(char str[]);
 bool is_string_ = false;
 int numero_de_macros=0;
 int tamanho_vetor_de_macros=0;
-Macro *vetor_macro=NULL;
+Macro **vetor_macro=NULL;
 
-void inserir_macro(int numero_de_macros,int tamanho_vetor_de_macros,Macro* vet,Macro m);
+void inserir_macro(Macro* m);
 
 
 
@@ -177,9 +177,9 @@ bool is_macro(int i,const char str[]){
         if(i > 0 && str[i-1] == '\n'){
                 puts("ok is macro 4");
                 for(k=0;k<6;k++){
-                        puts("ok is macro 5");
                         aux[k]=str[(i+1)+k];
                 }
+                printf("%s\n",aux);
                 if(strcmp(aux,"define") == 0){
                         puts("ok is macro 6");
                         return true;
@@ -190,45 +190,58 @@ bool is_macro(int i,const char str[]){
 }
 // i é a posição do primeiro char do macro
 bool is_simple_macro(int i,const char str[]){
+        int length=(int)strlen(str);
         int k=0;
-        while(str[i+k] != ' ' && str[i+k] != '('){
+        puts("is simple 1");
+        printf("primeiro char: %c\n",str[i+k]);
+        while(str[i+k] != ' ' && str[i+k] != '(' && (i+k)<length && str[i+k] != '\t'){
+                printf("%c\n",str[i+k]);
                 k++;
         }
+        puts("is simple 2");
+        printf("%c\n",str[i+k]);
         if(str[i+k] == '('){
+                puts("is simple 2,5");
                 return false;
         }
+        puts("is simple 3");
         return true;
 }
-// assume que i é a posição do primeiro char do macro
+// assume que i é a posição do primeiro char depois de "define"
 void save_macro(int i, const char str[]){
         int k=0;
         int j=0;
         Macro temp;
         temp.disponibilidade = OCUPADO;
         puts("save macro 1");
+        while((str[i] == ' ' || str[i] == '\t' )&& i<(int)strlen(str)){
+                printf("%c\n",str[i]);
+                i++;
+        }
+        printf("%c\n",str[i]);
+        puts("save macro 1,5");
         if(is_simple_macro(i,str)){
-                 puts("save macro 2");
+                puts("save macro 2");
                 temp.simples=1;
                 temp.qtd_param=0;
-                while(str[i+k]!=' '){
-                         puts("save macro loop 3");
+                while(str[i+k]!=' ' && str[i+k]!='\t' ){
                         temp.id[j]=str[i+k];
                         k++;j++;
                 }
                 k++; // pula o ' '
                 temp.id[j]='\0';
+                printf("id[%d]: %s\n",numero_de_macros,temp.id);
                 j=0;
-                while (str[i+k] != ' ' && str[i+k] != '\n'){
-                         puts("save macro 4");
+                while (str[i+k] != '\n'){
                         temp.value[j]=str[i+k];
                         k++;j++;
                 }
-                 puts("save macro 5");
+                puts("save macro 5");
                 temp.value[j]='\0';
-                printf("%s\n",temp.value);        //teste
+                printf("value[%d]: %s\n",numero_de_macros,temp.value);        //teste
                 puts("save macro 6");
-                inserir_macro(numero_de_macros,tamanho_vetor_de_macros,vetor_macro,temp);
-                 puts("save macro 7");
+                inserir_macro(&temp);
+                puts("save macro 7");
         }else{
                 temp.simples=0;
                 temp.qtd_param=1;
@@ -250,14 +263,17 @@ void save_macro(int i, const char str[]){
                 char parametrotemp[BUFFER_SIZE]={'\0'};
                 j=0;            //pos em parametros
                 int n=0;        //parametro n
-                while(str[i+k]!=')' ){
+                while(str[i+k]!=')' && str[i + k] != '\0' ){
                         if(str[i+k] != ','){
                                 parametrotemp[j]=str[i+k];
                                 k++;j++;
                         }else{
                                 parametrotemp[j]='\0';
                                 temp.parametros[n]= strdup(parametrotemp);
+                                n++;
                                 memset(parametrotemp, 0, sizeof(parametrotemp));
+                                k++;    //pula a virgula
+                                j=0;    //volta pro inicio
                         }
                 }
                 parametrotemp[j]='\0';
@@ -270,33 +286,49 @@ void save_macro(int i, const char str[]){
                 }
                 temp.value[j] = '\0';
 
-                inserir_macro(numero_de_macros,tamanho_vetor_de_macros,vetor_macro,temp);
+                inserir_macro(&temp);
         }
 }
-void inserir_macro(int numero_de_macros,int tamanho_vetor_de_macros,Macro* vet,Macro m){
+//por algum motivo, esta reescrevendo todas as posições de vetor_macro com o valor atual
+void inserir_macro(Macro* m){
         numero_de_macros++;
         puts("inserir macro 1");
         if(numero_de_macros == 1){
                 puts("inserir macro 2");
                 tamanho_vetor_de_macros = 1;
-                vet = (Macro*)malloc(sizeof(Macro)*tamanho_vetor_de_macros);
-                if (vet == NULL) {
+                vetor_macro = (Macro**)malloc(sizeof(Macro*)*tamanho_vetor_de_macros);
+                if (vetor_macro == NULL) {
                         perror("Erro ao alocar memória para vetor de structs");
                         return ;
                 }
-                vet[numero_de_macros-1] = m;
+                vetor_macro[numero_de_macros-1] = m;
         }else if(numero_de_macros >= tamanho_vetor_de_macros){
                 puts("inserir macro 3");
                 tamanho_vetor_de_macros = tamanho_vetor_de_macros*2;
-                vet = realloc(vet,sizeof(Macro)*tamanho_vetor_de_macros);
-                if (vet == NULL) {
+                vetor_macro = (Macro**)realloc(vetor_macro,sizeof(Macro*)*tamanho_vetor_de_macros);
+                if (vetor_macro == NULL) {
                         perror("Erro ao alocar memória para vetor de structs 2");
                         return ;
                 }
-                vet[numero_de_macros -1]= m;
+                printf("%d %d",tamanho_vetor_de_macros,numero_de_macros);
+                vetor_macro[numero_de_macros -1]= m;
         }else{
                 puts("inserir macro 4");
-                vet[numero_de_macros - 1] = m;
+                vetor_macro[numero_de_macros - 1] = m;
+        }
+        for (int i = 0; i < numero_de_macros; i++)
+        {
+                printf("macro[%d]: %s\n",i,vetor_macro[i]->id);
+                puts("teste 1");
+                if(vetor_macro[i]->qtd_param>0){
+                        puts("teste 2");
+                        for(int j=0;j<vetor_macro[i]->qtd_param;j++){
+                                puts("teste 3");
+                                printf("parametro[%d]%s\n",j,vetor_macro[i]->parametros[j]);
+                }
+                }
+                puts("teste 4");
+                printf("valor[%d]: %s\n",i,vetor_macro[i]->value);
         }
         puts("inserir macro 5");
 }
@@ -346,8 +378,8 @@ get_name(char str[], size_t len)
         // ja que o '.' não é um caractere valido
         // para nomear um token
         double d = atof(word);
-        if (!d)
-                printf("%s\n", word);
+        // if (!d)
+        //         printf(" get name: \n%s\n", word);
 }
 
 void
@@ -372,22 +404,22 @@ void find_macros(char str[]){
         int length = (int)strlen(str);  
         //char aux[BUFFER_SIZE]={'\0'};
         for(i=0;i<length;i++){
-                printf("ok loop %d\n",i);
                 if(str[i] == '#'){
-                        puts("ok 3");
+                        printf("ok loop %d\n",i);
                         if(is_macro(i,str)){
                                 puts("ok 4");
-                                save_macro(i,str);
+                                save_macro(i+7,str);
                                 puts("ok 5");
+                                int aux =i;
+                                while( str[aux]!='\n' && aux < length){
+                                        printf("%c\n",str[aux]);
+                                        str[aux]='\0';
+                                        aux++;                    //tira os defines do arquivo
+                                }
+                                puts("ok 5,5");
+                                organize_buffer(str);
+                                puts("ok 6");
                                 printf("%s",str);
-                                // while(str[i]!='\n' || i>= length){
-                                //         puts("ok ao");
-                                //         str[i]='\0';
-                                //         puts("ok 6");
-                                //         printf("%c",str[i]);
-                                //         puts("ok 7");
-                                //         i++;                    //tira os defines do arquivo
-                                // }
                         }
                 }
         }
@@ -425,6 +457,21 @@ main(int argc, char *argv[])
         puts("ok main 8");
         // nao tem problema de fechar stdout aqui
         fclose(fout);
+        for (int i = 0; i < numero_de_macros; i++)
+        {
+                printf("macro[%d]: %s\n",i,vetor_macro[i]->id);
+                puts("teste 1");
+                if(vetor_macro[i]->qtd_param>0){
+                        puts("teste 2");
+                        for(int j=0;j<vetor_macro[i]->qtd_param;j++){
+                                puts("teste 3");
+                                printf("parametro[%d]%s\n",j,vetor_macro[i]->parametros[j]);
+                }
+                }
+                puts("teste 4");
+                printf("valor[%d]: %s\n",i,vetor_macro[i]->value);
+        }
+        
         puts("tudo rodando");
         return 0;
 }
