@@ -265,65 +265,86 @@ void save_macro(int i, const char str[]){
                 inserir_macro(temp);
                 puts("save macro 7");
         }else{
-                
+                puts("macro com parametros");
                 temp->simples=0;
                 temp->qtd_param=1;
                 while(str[i+k]!='(' ){
                         temp->id[j]=str[i+k];
                         k++;j++;
                 }
+                puts(" '(' achado, id lido");
+                printf("'(' lido: %c\n",str[i+k]);
+                printf("id lido: %s\n",temp->id);
                 while(j<BUFFER_SIZE){
                         temp->id[j++]='\0';
                 }
+                printf("id lido apos adicionar '0': %s\n",temp->id);
                 k++;    // pula o "("
                 int aux =k;
-                while(str[i+k]!=')' && str[i + k] != '\0' ){
+                while(str[i+k] != ')' && str[i + k] != '\0' ){
                         if(str[i+k] == ','){
+                                puts("',' achado");
                                 temp->qtd_param++;
-                                k++;
                         }
+                        k++;
+
                 }
-                k=aux;
+                printf(" %d parametros contados\n",temp->qtd_param);
+                k=aux;  //k volta para depois de '('
                 temp->parametros =(char**) malloc(sizeof(char *) * temp->qtd_param);
+                puts("parametros alocados");
                 char parametrotemp[BUFFER_SIZE]={'\0'};
                 j=0;            //pos em parametros
                 int n=0;        //parametro n
-                while(str[i+k]!=')' && str[i + k] != '\0' ){
-                        if(str[i+k] != ','){
+                while(str[i+k-1]!=')' && str[i + k-1] != '\0' ){
+                        if(str[i+k] != ',' && str[i+k] != ')' ){
+                                printf("salvando %c como parametrotemp\n",str[i+k]);
                                 parametrotemp[j]=str[i+k];
                                 k++;j++;
                         }else{
+                                printf("parametrotemp lido: %s\n", parametrotemp);
                                 while(j<BUFFER_SIZE){
                                         parametrotemp[j++]='\0';
                                 }
+                                puts("macro com parametros 9");
                                 temp->parametros[n]= strdup(parametrotemp);
+                                printf("parametrotemp salvo no vetor: %s\n",temp->parametros[n]);
                                 n++;
                                 memset(parametrotemp, 0, sizeof(parametrotemp));
+                                puts("parametrotemp copiado e limpo");
                                 k++;    //pula a virgula
                                 j=0;    //volta pro inicio
                         }
                 }
+                puts("macro com parametros 11");
                 while (j<BUFFER_SIZE){
                         parametrotemp[j++]='\0';
                 }
-                
+                puts("macro com parametros 12");
                 temp->parametros[n]= strdup(parametrotemp);
                 k++;    //pula ')'
                 j=0;    //pos do corpo
+                puts("macro com parametros 13");
                 while (str[i + k] == ' ') k++;  //pula espaços
-                while (str[i + k] != '\0' && str[i + k] != '\n' && str[i + k] != ' ') {
+                puts("macro com parametros 14");
+                while (str[i + k] != '\0' && str[i + k] != '\n') {
                         temp->value[j++] = str[i + k++];
                 }
-                while (j<BUFFER_SIZE){}{
-                        temp->value[j++]='\0';
-                }
+                printf("valor lido: %s\n",temp->value);        //parou aqui
+                // while (j<BUFFER_SIZE){}{
+                //         temp->value[j++]='\0';
+                // }
+                // puts("macro com parametros 16");
                 //remove_space(temp->value);
                 // for(int z=0;z<=n;z++){
                 //         remove_space(temp->parametros[z]);
                 // }
                 temp->id[sizeof(temp->id) - 1] = '\0';
+                puts("macro com parametros 17");
                 temp->value[sizeof(temp->value) - 1] = '\0';
+                puts("macro com parametros 18");
                 inserir_macro(temp);
+                puts("macro com parametros 19");
         }
 }
 
@@ -501,8 +522,8 @@ main(int argc, char *argv[])
                         
                         for(int j=0;j<vetor_macro[i]->qtd_param;j++){
                                
-                                remove_space(vetor_macro[i]->parametros[j]);
-                                printf("parametro[%d]%s\n",j,vetor_macro[i]->parametros[j]);
+                                //remove_space(vetor_macro[i]->parametros[j]);
+                                printf("parametro[%d]: %s\n",j,vetor_macro[i]->parametros[j]);
                 }
                 }
                 remove_space(vetor_macro[i]->value);
