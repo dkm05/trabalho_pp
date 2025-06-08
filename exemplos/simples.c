@@ -14,6 +14,9 @@
         int         a,             b,/******
 
         */c, d;
+        int x=N;
+        int y=20;
+        troca(x,y)
         char string[] = "isso e uma string";
         char outra_string[] = "abc\
                   d";

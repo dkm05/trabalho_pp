@@ -407,6 +407,8 @@ remove_space(char str[])
         organize_buffer(str);
 }
 
+
+
 void
 get_name(char str[], size_t len)
 {
@@ -438,8 +440,8 @@ substituir_macros(char str[])
                 }
         }
 }
-//acha macros, escreve eles num hash, e apaga da string substituindo os caracteres por \0
-void find_macros(char str[]){
+//acha macros,salva no vetor_macro, e apaga da string substituindo os caracteres por \0
+void find_macros_leitura(char str[]){
         puts("ok 1");
         int i=0;
         int ret;
@@ -480,6 +482,37 @@ void free_macro(){
 }
 free(vetor_macro);
 }
+
+void substituir_macros_final(char str[]){
+        int i;// para procurar o vetor_macro[i] na str
+        size_t k=0; //indice de str
+        size_t pos =0; //indice de aux
+        char aux[BUFFER_SIZE]={'\0'};
+        size_t length = strlen(str);
+        for(i=0;i<numero_de_macros;i++){
+                printf("procura %d\n",i);
+                while (k<length){
+                        if(!is_token_char(str[k])){
+                                //printf("achou um \"%c\"\n",str[k]);
+                                printf("aux: %s\n", aux);
+                                if(strcmp(aux,vetor_macro[i]->id) == 0 ){       //fazer a substituição de valor
+                                        printf("macro %s achado\n", aux);
+                                }
+                                memset(aux,0,sizeof(aux));
+                                pos=0;
+                                k++;    //pular caracter nao desejado
+                        }
+                        aux[pos]=str[k];
+                        //aux[pos+1]='\0';
+                        k++;pos++;
+                }
+                memset(aux,0,sizeof(aux));
+                k=0;
+                pos=0;
+                
+        }
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -502,10 +535,14 @@ main(int argc, char *argv[])
         remove_comments(str);
         puts("ok main 3");
         
-        find_macros(str);
+        find_macros_leitura(str);
         puts("ok main 4");
         
-        substituir_macros(str);
+        // for(size_t z=0;z<strlen(str);z++){
+        //         printf("%c",str[z]);
+        // }
+
+        substituir_macros_final(str);
         puts("ok main 5");
 
         remove_space(str);
