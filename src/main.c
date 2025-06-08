@@ -159,27 +159,35 @@ remove_trailling_space(char str[])
 }
 
 // quando ler um #, passa a posição do # no i, e a string
-bool is_macro(int i,const char str[]){
+bool is_macro(int i,const char str[],int *ret){
         char aux[7]={'\0'};
+        int i_aux=i;    //guarda a posição do #
+        i++;
+        while(str[i] == ' '){ //pula espaços provenientes da remoção de comentários
+                i++;
+        }
+        *ret=i-i_aux-1;
         int k;
-        if(i == 0){
+        if(i_aux == 0){
                 puts("ok is macro 1");
                 for(k=0;k<6;k++){
-                        puts("ok is macro 2");
-                        aux[k]=str[(i+1)+k];
+                        printf("lido: %c\n",str[i]);
+                        aux[k]=str[i++];
+                        printf("escrito: %c\n",aux[k]);
                 }
-                //printf("%s",aux);
+                printf("diretorio lido: %s\n",aux);
                 if(strcmp(aux,"define")==0){
                         puts("ok is macro 3");
                         return true;
                 }
-        }
-        if(i > 0 && str[i-1] == '\n'){
+        }else if(i_aux > 0 && str[i_aux-1] == '\n'){
                 puts("ok is macro 4");
                 for(k=0;k<6;k++){
-                        aux[k]=str[(i+1)+k];
+                        printf("lido: %c\n",str[i]);
+                        aux[k]=str[i++];
+                        printf("escrito: %c\n",aux[k]);
                 }
-                //printf("%s\n",aux);
+                printf("diretorio lido: %s\n",aux);
                 if(strcmp(aux,"define") == 0){
                         puts("ok is macro 6");
                         return true;
@@ -212,6 +220,7 @@ void save_macro(int i, const char str[]){
         int k=0;
         int j=0;
         Macro* temp = malloc(sizeof(Macro));
+        
         if (!temp) {
         die("Falha ao alocar memória para Macro");
     }  
@@ -232,15 +241,22 @@ void save_macro(int i, const char str[]){
                         k++;j++;
                 }
                 k++; // pula o ' '
-                temp->id[j]='\0';
+                while(j<BUFFER_SIZE){
+                        temp->id[j++]='\0';
+                }
                 printf("id[%d]: %s\n",numero_de_macros,temp->id);
                 j=0;
                 while (str[i+k] != '\n' && str[i+k] != '\0'){
                         temp->value[j]=str[i+k];
                         k++;j++;
                 }
-                //puts("save macro 5");
-                temp->value[j]='\0';
+                puts("save macro 5");
+                for(int z=j;z<BUFFER_SIZE;z++){
+                        temp->value[z]='\0';
+                }
+                organize_buffer(temp->value);
+                
+                puts("save macro 5,5");
                 printf("value[%d]: %s\n",numero_de_macros,temp->value);        //teste
                 puts("save macro 6");
                 //remove_space(temp->value);
@@ -249,13 +265,16 @@ void save_macro(int i, const char str[]){
                 inserir_macro(temp);
                 puts("save macro 7");
         }else{
+                
                 temp->simples=0;
                 temp->qtd_param=1;
                 while(str[i+k]!='(' ){
                         temp->id[j]=str[i+k];
                         k++;j++;
                 }
-                temp->id[j]='\0';
+                while(j<BUFFER_SIZE){
+                        temp->id[j++]='\0';
+                }
                 k++;    // pula o "("
                 int aux =k;
                 while(str[i+k]!=')' && str[i + k] != '\0' ){
@@ -274,7 +293,9 @@ void save_macro(int i, const char str[]){
                                 parametrotemp[j]=str[i+k];
                                 k++;j++;
                         }else{
-                                parametrotemp[j]='\0';
+                                while(j<BUFFER_SIZE){
+                                        parametrotemp[j++]='\0';
+                                }
                                 temp->parametros[n]= strdup(parametrotemp);
                                 n++;
                                 memset(parametrotemp, 0, sizeof(parametrotemp));
@@ -282,7 +303,10 @@ void save_macro(int i, const char str[]){
                                 j=0;    //volta pro inicio
                         }
                 }
-                parametrotemp[j]='\0';
+                while (j<BUFFER_SIZE){
+                        parametrotemp[j++]='\0';
+                }
+                
                 temp->parametros[n]= strdup(parametrotemp);
                 k++;    //pula ')'
                 j=0;    //pos do corpo
@@ -290,7 +314,9 @@ void save_macro(int i, const char str[]){
                 while (str[i + k] != '\0' && str[i + k] != '\n' && str[i + k] != ' ') {
                         temp->value[j++] = str[i + k++];
                 }
-                temp->value[j] = '\0';
+                while (j<BUFFER_SIZE){}{
+                        temp->value[j++]='\0';
+                }
                 //remove_space(temp->value);
                 // for(int z=0;z<=n;z++){
                 //         remove_space(temp->parametros[z]);
@@ -395,14 +421,15 @@ substituir_macros(char str[])
 void find_macros(char str[]){
         puts("ok 1");
         int i=0;
+        int ret;
         int length = (int)strlen(str);  
         //char aux[BUFFER_SIZE]={'\0'};
         for(i=0;i<length;i++){
                 if(str[i] == '#'){
                         //printf("ok loop %d\n",i);
-                        if(is_macro(i,str)){
+                        if(is_macro(i,str,&ret)){
                                 puts("ok 4");
-                                save_macro(i+7,str);
+                                save_macro(i+7+ret,str);//pos do # + 7 digitos(define) + ret(consequentes espaços pulados em is_macro)
                                 puts("ok 5");
                                 int aux =i;
                                 while( str[aux]!='\n' && aux < length){
@@ -414,7 +441,9 @@ void find_macros(char str[]){
                                 organize_buffer(str);
                                 puts("ok 6");
                                 //printf("%s",str);
-                        }
+                        }//else if(is_include(i,str)){
+
+                        // }
                 }
         }
 }
@@ -446,22 +475,24 @@ main(int argc, char *argv[])
                 die("Erro ao abrir o arquivo de entrada.");
         if (!fout)
                 die("Erro ao criar o arquivo de saída.");
-        puts("ok main 1");
         read_file(fin, str);
+        puts("ok main 1");
         
-        puts("ok main 3");
         remove_comments(str);
+        puts("ok main 3");
         
+        find_macros(str);
         puts("ok main 4");
         
         substituir_macros(str);
         puts("ok main 5");
 
-        find_macros(str);
-        puts("ok main 6");
         remove_space(str);
+        puts("ok main 6");
+        
         print_line(fout, str);
         puts("ok main 7");
+        
         for (int i = 0; i < numero_de_macros; i++)
         {
                 
@@ -477,6 +508,7 @@ main(int argc, char *argv[])
                 remove_space(vetor_macro[i]->value);
                 printf("valor[%d]: %s\n",i,vetor_macro[i]->value);
         }
+        
         fclose(fin);
         puts("ok main 8");
         // nao tem problema de fechar stdout aqui
