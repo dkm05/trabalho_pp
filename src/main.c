@@ -360,20 +360,21 @@ remove_space(Vetor *str)
 }
 
 void
-get_name(Vetor *str, int ini, int len)
+get_name(Vetor *dest, Vetor *src, int ini, int len)
 {
-        char c = elemento(str, 0);
-        if (isdigit(c))
-                return;
-        Vetor *word = novo_vetor();
-        vetor_memcpy(word, str, ini, len);
-        print_line(stdout, word);
+        char c = elemento(src, ini - len);
+        if (isdigit(c)) {
+                vetor_clear(dest);
+        } else {
+                vetor_memcpy(dest, src, ini, len);
+        }
 }
 
 void
 substituir_macros(Vetor *str)
 {
         int word_len = 0, len = tamanho_vetor(str);
+        Vetor *word = novo_vetor(64);
         char c;
         for (int i = 0; i < len; i++) {
                 c = elemento(str, i);
@@ -382,10 +383,14 @@ substituir_macros(Vetor *str)
                 if (is_token_char(c)) {
                         word_len++;
                 } else if (word_len > 0) {
-                        get_name(str, i, word_len);
+                        get_name(word, str, i, word_len);
+                        //  faz algo com o nome
+                        print_line(stdout, word);
+                        printf("\n");
                         word_len = 0;
                 }
         }
+        finaliza_vetor(word);
 }
 //acha macros, escreve eles num hash, e apaga da string substituindo os caracteres por \0
 void find_macros(char str[]){
@@ -423,7 +428,7 @@ main(int argc, char *argv[])
 
         FILE *fin = fopen(argv[1], "r");
         FILE *fout = stdout;
-        Vetor *str = novo_vetor();
+        Vetor *str = novo_vetor(4096);
 
         if (argc >= 3)
                 fout = fopen(argv[2], "w");
@@ -435,8 +440,8 @@ main(int argc, char *argv[])
         read_file(fin, str);
         PRINT_DEBUG("ok main 3");
         remove_comments(str);
-        // remove_space(str);
-        // substituir_macros(str);
+        remove_space(str);
+        substituir_macros(str);
         print_line(fout, str);
         return 0;
         PRINT_DEBUG("ok main 4");

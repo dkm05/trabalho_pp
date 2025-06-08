@@ -1,8 +1,7 @@
-    
-            int/****/               main() {
+int/****/               main() {
         int         a,             b,/******
 
-        */c, d;
+        */c, d = 1;
         char string = "isso e uma string";
         char c[] = "abc\
                   d";
