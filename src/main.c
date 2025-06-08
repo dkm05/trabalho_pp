@@ -64,28 +64,12 @@ is_string(Vetor *str, int i)
 }
 
 void
-organize_buffer(Vetor *str)
+print_line(FILE *f, Vetor *str)
 {
-        int pos = 0;
         int len = tamanho_vetor(str);
         char c;
         for (int i = 0; i < len; i++) {
                 c = elemento(str, i);
-                if (c != '\0') {
-                        adiciona_elemento(str, c, pos);
-                        pos++;
-                        if (i != pos - 1)
-                                adiciona_elemento(str, '\0', i);
-                }
-        }
-}
-
-void
-print_line(FILE *f, Vetor *str)
-{
-        int len = tamanho_vetor(str);
-        for (int i = 0; i < len; i++) {
-                char c = elemento(str, i);
                 putc(c, f);
         }
 }
@@ -191,9 +175,8 @@ remove_trailling_space(Vetor *str)
                 if (is_string(str, i))
                         continue;
                 if (isblank(c) && isblank(ant)) {
-                        printf("A");
+                        adiciona_elemento(str, '\0', i - 1);
                 }
-                        adiciona_elemento(str, i - 1, '\0');
         }
         organize_buffer(str);
 }
@@ -384,8 +367,7 @@ get_name(Vetor *str, int ini, int len)
                 return;
         Vetor *word = novo_vetor();
         vetor_memcpy(word, str, ini, len);
-        adiciona_elemento(str, '\0', len);
-        print_line(stdout, str);
+        print_line(stdout, word);
 }
 
 void
@@ -400,9 +382,6 @@ substituir_macros(Vetor *str)
                 if (is_token_char(c)) {
                         word_len++;
                 } else if (word_len > 0) {
-                        /* isso aqui tá errado, tem que passar 
-                         * o Vetor...
-                         */
                         get_name(str, i, word_len);
                         word_len = 0;
                 }
@@ -456,19 +435,19 @@ main(int argc, char *argv[])
         read_file(fin, str);
         PRINT_DEBUG("ok main 3");
         remove_comments(str);
-        remove_space(str);
+        // remove_space(str);
+        // substituir_macros(str);
         print_line(fout, str);
         return 0;
         PRINT_DEBUG("ok main 4");
-        // substituir_macros(str);
-        // PRINT_DEBUG("ok main 5");
+        PRINT_DEBUG("ok main 5");
         // find_macros(str);
-        // PRINT_DEBUG("ok main 6");
-        // PRINT_DEBUG("ok main 7");
-        // fclose(fin);
-        // PRINT_DEBUG("ok main 8");
-        // // nao tem problema de fechar stdout aqui
-        // fclose(fout);
-        // PRINT_DEBUG("tudo rodando");
-        // return 0;
+        PRINT_DEBUG("ok main 6");
+        PRINT_DEBUG("ok main 7");
+        fclose(fin);
+        PRINT_DEBUG("ok main 8");
+        // nao tem problema de fechar stdout aqui
+        fclose(fout);
+        PRINT_DEBUG("tudo rodando");
+        return 0;
 }

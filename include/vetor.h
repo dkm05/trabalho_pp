@@ -10,5 +10,6 @@ void adiciona_elemento(Vetor* V, char x, int i);
 char elemento(const Vetor* V, int i);
 void remove_elemento(Vetor* V, int i);
 void vetor_memcpy(Vetor *dest, const Vetor *src, int ini, int fim);
+void organize_buffer(Vetor *src);
 
 #endif
