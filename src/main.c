@@ -8,7 +8,7 @@
 
 void remove_space(char str[]);
 // futuramente o buffer tem que ficar na heap
-#define BUFFER_SIZE 10240
+#define BUFFER_SIZE 4096
 #define ARRLEN(arr) ((int) (sizeof(arr) / sizeof(arr[0])))
 // pensar em um nome
 #define is_token_char(c) (isalnum(c) || (c) == '_')
@@ -462,10 +462,6 @@ main(int argc, char *argv[])
         remove_space(str);
         print_line(fout, str);
         puts("ok main 7");
-        fclose(fin);
-        puts("ok main 8");
-        // nao tem problema de fechar stdout aqui
-        fclose(fout);
         for (int i = 0; i < numero_de_macros; i++)
         {
                 
@@ -481,6 +477,10 @@ main(int argc, char *argv[])
                 remove_space(vetor_macro[i]->value);
                 printf("valor[%d]: %s\n",i,vetor_macro[i]->value);
         }
+        fclose(fin);
+        puts("ok main 8");
+        // nao tem problema de fechar stdout aqui
+        fclose(fout);
         free_macro();
         puts("tudo rodando");
         

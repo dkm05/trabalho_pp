@@ -1,6 +1,11 @@
     
-    
-    
+#define __A__ (for     int(     i_   = 0; i_ <= 10; i ++))\
+                                   i  + = +10;
+#define __B__ for      int
+
+// #define A 10
+// #define B 20
+// # define C 30
 #/**/define/***/N 10 // ...
 // .......
 // ...
@@ -8,8 +13,8 @@
         int         a,             b,/******
 
         */c, d;
-        char string = "isso e uma string";
-        char c[] = "abc\
+        char string[] = "isso e uma string";
+        char outra_string[] = "abc\
                   d";
         printf(   "   \n    "    );
         char         e/****/               [] = "/**   */     //";
