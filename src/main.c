@@ -225,17 +225,19 @@ void save_macro(int i, const char str[]){
         die("Falha ao alocar memória para Macro");
     }  
         temp->disponibilidade = OCUPADO;
-        puts("save macro 1");
+        //puts("save macro 1");
         while((str[i] == ' ' || str[i] == '\t' )&& i<(int)strlen(str)){
                 printf("%c\n",str[i]);
                 i++;
         }
         //printf("%c\n",str[i]);
-        puts("save macro 1,5");
+        //puts("save macro 1,5");
         if(is_simple_macro(i,str)){
-                puts("save macro 2");
+                //puts("save macro 2");
+                i++;
                 temp->simples=1;
                 temp->qtd_param=0;
+                //printf("%c\n",str[i+k]);
                 while(str[i+k]!=' ' && str[i+k]!='\t' ){
                         temp->id[j]=str[i+k];
                         k++;j++;
@@ -259,9 +261,10 @@ void save_macro(int i, const char str[]){
                 puts("save macro 5,5");
                 printf("value[%d]: %s\n",numero_de_macros,temp->value);        //teste
                 puts("save macro 6");
-                //remove_space(temp->value);
-                temp->id[sizeof(temp->id) - 1] = '\0';
-                temp->value[sizeof(temp->value) - 1] = '\0';
+                remove_space(temp->value);
+                remove_space(temp->id);
+                // temp->id[sizeof(temp->id) - 1] = '\0';
+                // temp->value[sizeof(temp->value) - 1] = '\0';
                 inserir_macro(temp);
                 puts("save macro 7");
         }else{
@@ -278,6 +281,7 @@ void save_macro(int i, const char str[]){
                 while(j<BUFFER_SIZE){
                         temp->id[j++]='\0';
                 }
+                remove_space(temp->id);
                 printf("id lido apos adicionar '0': %s\n",temp->id);
                 k++;    // pula o "("
                 int aux =k;
@@ -312,7 +316,7 @@ void save_macro(int i, const char str[]){
                                 printf("parametrotemp salvo no vetor: %s\n",temp->parametros[n]);
                                 n++;
                                 memset(parametrotemp, 0, sizeof(parametrotemp));
-                                puts("parametrotemp copiado e limpo");
+                                //puts("parametrotemp copiado e limpo");
                                 k++;    //pula a virgula
                                 j=0;    //volta pro inicio
                         }
@@ -332,7 +336,12 @@ void save_macro(int i, const char str[]){
                 while (str[i + k] != '\0' && str[i + k] != '\n') {
                         temp->value[j++] = str[i + k++];
                 }
-                printf("valor lido: %s\n",temp->value);        //parou aqui
+                puts("macro com parametros 15");
+                while(j<BUFFER_SIZE){
+                       temp->value[j++] = '\0';
+                }
+                remove_space(temp->value);
+                printf("valor lido: %s\n",temp->value);        
                 // while (j<BUFFER_SIZE){}{
                 //         temp->value[j++]='\0';
                 // }
@@ -341,10 +350,10 @@ void save_macro(int i, const char str[]){
                 // for(int z=0;z<=n;z++){
                 //         remove_space(temp->parametros[z]);
                 // }
-                temp->id[sizeof(temp->id) - 1] = '\0';
-                puts("macro com parametros 17");
-                temp->value[sizeof(temp->value) - 1] = '\0';
                 puts("macro com parametros 18");
+                for(int h;h<temp->qtd_param;h++){
+                        remove_space(temp->parametros[h]);
+                }
                 inserir_macro(temp);
                 puts("macro com parametros 19");
         }
@@ -560,11 +569,9 @@ main(int argc, char *argv[])
                 if(vetor_macro[i]->qtd_param>0){
                         
                         for(int j=0;j<vetor_macro[i]->qtd_param;j++){
-                                remove_space(vetor_macro[i]->parametros[j]);
                                 printf("parametro[%d]: %s\n",j,vetor_macro[i]->parametros[j]);
                 }
                 }
-                remove_space(vetor_macro[i]->value);
                 printf("valor[%d]: %s\n",i,vetor_macro[i]->value);
         }
         

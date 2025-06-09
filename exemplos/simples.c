@@ -1,5 +1,5 @@
-#define troca(a,x) {int aux =x;x=a; a=aux;}
-
+#define troca(a,x)               {int aux =x;x=a; a=aux;}
+#define N            20
 // .......
 // ...
             int/****/               main() {
