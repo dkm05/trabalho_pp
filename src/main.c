@@ -4,12 +4,9 @@
 #include <stdbool.h>
 #include <ctype.h>
 #include "tokens.h"
-#include "hashmap.h"
+#include "funcoes.h"
 
-void remove_space(char str[]);
-void process_directives(char str[], FILE *f);
-void process_file(FILE *fin, FILE *fout);
-bool is_new_token(char c1, char c2);
+
 // futuramente o buffer tem que ficar na heap
 #define BUFFER_SIZE 4096
 #define ARRLEN(arr) ((int) (sizeof(arr) / sizeof(arr[0])))
@@ -24,7 +21,7 @@ int numero_de_macros=0;
 int tamanho_vetor_de_macros=0;
 Macro **vetor_macro=NULL;
 
-void inserir_macro(Macro* m);
+
 
 
 
