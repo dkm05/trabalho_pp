@@ -1,4 +1,9 @@
+#include <stdio.h>
+#include "ex1.h"
+#include "ex2.h"
+#include "ex3.h"
 #define troca(a,x)               {int aux =x;x=a; a=aux;}
+
 #define N            20
 // .......
 // ...

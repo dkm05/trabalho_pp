@@ -1,16 +1,16 @@
 CC = gcc
 CFLAGS = -Iinclude -Wall -Wextra
-SRC = main.c hashmap.c
+SRC = main.c funcoes.c
 OBJ = ${SRC:.c=.o}
 
 
-main: main.o hashmap.o
-	$(CC) $(CFLAGS) -o bin/$@ obj/main.o obj/hashmap.o
+main: main.o funcoes.o
+	$(CC) $(CFLAGS) -o bin/$@ obj/main.o obj/funcoes.o
 
 main.o: src/main.c
 	$(CC) $(CFLAGS) -o obj/$@ -c $<
 
-hashmap.o: src/hashmap.c
+funcoes.o: src/funcoes.c
 	$(CC) $(CFLAGS) -o obj/$@ -c $<
 
 .PHONY: clean

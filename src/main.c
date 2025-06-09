@@ -4,16 +4,9 @@
 #include <stdbool.h>
 #include <ctype.h>
 #include "tokens.h"
-#include "hashmap.h"
+#include "funcoes.h"
 
-void remove_space(char str[]);
-// futuramente o buffer tem que ficar na heap
-#define BUFFER_SIZE 4096
-#define ARRLEN(arr) ((int) (sizeof(arr) / sizeof(arr[0])))
-// pensar em um nome
-#define is_token_char(c) (isalnum(c) || (c) == '_')
-#define is_quote(str, i, c) ((i) && (c) == '"' && (str)[(i) - 1] != '\'' && (str)[(i) - 1] != '\\')
-#define line_splicing(c1, c2) (c1) == '\\' && (c2) == '\n'
+
 
 /* global variables */
 bool is_string_ = false;
@@ -21,7 +14,7 @@ int numero_de_macros=0;
 int tamanho_vetor_de_macros=0;
 Macro **vetor_macro=NULL;
 
-void inserir_macro(Macro* m);
+
 
 
 
@@ -61,9 +54,13 @@ organize_buffer(char *str)
 void
 print_line(FILE *f, char str[])
 {
-        for (int i = 0; str[i] != '\0'; i++) {
-                putc(str[i], f);
+        size_t i;
+        for (i = 0; str[i] != '\n'; i++) {
+                if (str[i] != '\0')
+                        putc(str[i], f);
         }
+        if (i > 0 && i < BUFFER_SIZE && is_new_token(str[i - 1], str[i + 1]))
+                putc(' ', f);
 }
 
 void
@@ -524,15 +521,170 @@ void substituir_macros_final(char str[]){
         }
 }
 
+void get_system_include(char str[], FILE *fout)
+{
+        char *buffer = calloc(1000000, sizeof(char));
+        if (!buffer) {
+                printf("NAO FOI POSSIVEL ALOCAR\n");
+        }
+        FILE *fin;
+        char file[256] = {'\0'};
+        char *db[4] = 
+        {
+                "/usr/include/",
+                "/usr/local/include/",
+                "/usr/lib/gcc/x86_64-pc-linux-gnu/15.1.1/include/",
+                "/usr/lib/gcc/x86_64-pc-linux-gnu/15.1.1/include-fixed/",
+        };
+
+        for (int i = 0; i < 4; i++) {
+                strcpy(file, db[i]);
+                strcat(file, str);
+                if ((fin = fopen(file, "r")))
+                        break;
+        }
+        if (fin) {
+                printf("FILE: %s\n", file);
+                read_file(fin, buffer);
+                remove_comments(buffer);
+                remove_space(buffer);
+                process_directives(buffer, fout);
+                size_t len = strlen(buffer);
+                for (size_t i = 0; i < len; i++) {
+                        if (buffer[i] != '\0')
+                                putc(buffer[i], fout);
+                }
+                putc('\n', fout);
+        } else {
+                printf("NAO ABRIU: %s\n", file);
+        }
+        free(buffer);
+}
+
+void get_user_include(char str[], FILE *fout)
+{
+        FILE *fin = fopen(str, "r");
+        /* esse tamanho arbitrário pode ser resolvido
+         * se usar um vetor dinamico, se der tempo...
+         */
+        char file[256];
+        /* pode botar numa header depois
+         * e usar uma db de acordo com o sistema
+         */
+
+        if (!fin) {
+                get_system_include(str, fout);
+                return;
+        }
+
+        /* esse bloco de codigo pode virar uma função,
+         * process_file ou algo do tipo
+         */
+        process_file(fin, fout);
+}
+
+void get_include(const char str[], FILE *fout)
+{
+        char file[64] = {'\0'};
+        sscanf(str, " %[^\n]", file);
+        size_t len = strlen(file);
+        if (file[0] == '<') {
+                file[0] = file[len - 1] = '\0';
+                get_system_include(file + 1, fout);
+        } else if (file[0] == '\"') {
+                file[0] = file[len - 1] = '\0';
+                get_user_include(file + 1, fout);
+        } else {
+                fprintf(stderr, "ERRO: arquivo %s não encontrado.\n", file);
+                exit(EXIT_FAILURE);
+        }
+}
+
+void process_directives(char str[], FILE *f)
+{
+        size_t len = strlen(str), size = 1000;
+        char *linha = calloc(size, sizeof(char));
+        if (!linha) {
+                printf("NAO FOI POSSIVEL ALOCAR\n");
+        }
+        char nome[128] = {'\0'};
+        char c;
+        size_t i = 0;
+        size_t count = 0;
+        while (count < len) {
+                while ((c = str[count++]) != '\n') {
+                        if (i >= size) {
+                                size *= 2;
+                                linha = realloc(linha, size);
+                        }
+                        if (c != '\0')
+                                linha[i++] = c;
+                }
+                linha[i] = '\0';
+                if (linha[0] == '#') {
+                        int ret;
+                        int i=0;
+                        sscanf(linha, "# %[A-Za-z_0-9]", nome);
+                        count -= strlen(linha) + 1;
+                        ignore_until_newline(str, &count);
+                        if(is_macro(i,str,&ret)){
+                                int length = (int)strlen(linha);
+                                puts("ok 4");
+                                save_macro(i+7+ret,str);//pos do # + 7 digitos(define) + ret(consequentes espaços pulados em is_macro)
+                                puts("ok 5");
+                                int aux =i;
+                                while( str[aux]!='\n' && aux < length){
+                                        //printf("%c\n",str[aux]);
+                                        str[aux]='\0';
+                                        aux++;                    //tira os defines do arquivo
+                                }
+                                puts("ok 5,5");
+                                puts("ok 6");
+                                //printf("%s",str);
+                        } else if (!strcmp(nome, "include")) {
+                                /* essas 2 linhas podem dar problema na 
+                                 * compilação se elas pegarem #define das
+                                 * bibliotecas padrão pois elas apagam
+                                 * os diretorios da string
+                                 */
+                                get_include(linha + 8, f);
+                        } else if (!strcmp(nome, "ifdef")) {
+                                ;
+                                // exemplo...
+                        }
+                } else {
+                        print_line(f, str + count - i - 1);
+                }
+                linha[0] = '\0';
+                i = 0;
+        }
+        organize_buffer(str);
+        free(linha);
+}
+
+void
+process_file(FILE *fin, FILE *fout)
+{
+        char *buffer = calloc(1000000, sizeof(char));
+        if (!buffer) {
+                printf("NAO FOI POSSIVEL ALOCAR\n");
+        }
+        read_file(fin, buffer);
+        remove_comments(buffer);
+        remove_space(buffer);
+        process_directives(buffer, fout);
+        free(buffer);
+}
+
 int
 main(int argc, char *argv[])
 {
         if (argc < 2)
                 die("usage: ./main <input.c> [<output>]");
 
+        printf("%s\n", argv[1]);
         FILE *fin = fopen(argv[1], "r");
         FILE *fout = stdout;
-        char str[BUFFER_SIZE] = {'\0'};
 
         if (argc >= 3)
                 fout = fopen(argv[2], "w");
@@ -540,26 +692,25 @@ main(int argc, char *argv[])
                 die("Erro ao abrir o arquivo de entrada.");
         if (!fout)
                 die("Erro ao criar o arquivo de saída.");
-        read_file(fin, str);
+
+        process_file(fin, fout);
+        return 0;
         puts("ok main 1");
         
-        remove_comments(str);
         puts("ok main 3");
         
-        find_macros_leitura(str);
         puts("ok main 4");
         
         // for(size_t z=0;z<strlen(str);z++){
         //         printf("%c",str[z]);
         // }
 
-        remove_space(str);
         puts("ok main 6");
 
-        substituir_macros(str);
+        // substituir_macros(str);
         puts("ok main 5");
         
-        print_line(fout, str);
+        // print_line(fout, str);
         puts("ok main 7");
         
         for (int i = 0; i < numero_de_macros; i++)
