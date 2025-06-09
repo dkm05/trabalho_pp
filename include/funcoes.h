@@ -27,11 +27,9 @@ enum {
 };
 
 void read_file(FILE *fp, char str[]);
-void process_file(FILE *fin, FILE *fout);
 void get_system_include(char str[], FILE *fout);
 void get_include(const char str[], FILE *fout);
 void get_user_include(char str[], FILE *fout);
-void process_directives(char str[], FILE *f);
 void process_directives(char str[], FILE *f);
 void process_file(FILE *fin, FILE *fout);
 void print_line(FILE *f, char str[]);
@@ -39,14 +37,12 @@ void print_line(FILE *f, char str[]);
 void inserir_macro(Macro* m);
 bool is_macro(int i,const char str[],int *ret);
 void save_macro(int i, const char str[]);
-void inserir_macro(Macro *m);
 bool is_simple_macro(int i,const char str[]);
 void find_macros_leitura(char str[]);
 void substituir_macros_final(char str[]);
 void substituir_macros(char str[]);
 void free_macro();
 
-void remove_space(char str[]);
 void get_name(char dest[], char str[], size_t len);
 bool is_new_token(char c1, char c2);
 bool is_string(char str[], size_t i);
