@@ -7,13 +7,6 @@
 #include "funcoes.h"
 
 
-// futuramente o buffer tem que ficar na heap
-#define BUFFER_SIZE 4096
-#define ARRLEN(arr) ((int) (sizeof(arr) / sizeof(arr[0])))
-// pensar em um nome
-#define is_token_char(c) (isalnum(c) || (c) == '_')
-#define is_quote(str, i, c) ((i) && (c) == '"' && (str)[(i) - 1] != '\'' && (str)[(i) - 1] != '\\')
-#define line_splicing(c1, c2) (c1) == '\\' && (c2) == '\n'
 
 /* global variables */
 bool is_string_ = false;
@@ -620,11 +613,25 @@ void process_directives(char str[], FILE *f)
                 }
                 linha[i] = '\0';
                 if (linha[0] == '#') {
+                        int ret;
+                        int i=0;
                         sscanf(linha, "# %[A-Za-z_0-9]", nome);
                         count -= strlen(linha) + 1;
                         ignore_until_newline(str, &count);
-                        if (!strcmp(nome, "define")) {
-                                // save_macro(i+7,str);
+                        if(is_macro(i,str,&ret)){
+                                int length = (int)strlen(linha);
+                                puts("ok 4");
+                                save_macro(i+7+ret,str);//pos do # + 7 digitos(define) + ret(consequentes espaços pulados em is_macro)
+                                puts("ok 5");
+                                int aux =i;
+                                while( str[aux]!='\n' && aux < length){
+                                        //printf("%c\n",str[aux]);
+                                        str[aux]='\0';
+                                        aux++;                    //tira os defines do arquivo
+                                }
+                                puts("ok 5,5");
+                                puts("ok 6");
+                                //printf("%s",str);
                         } else if (!strcmp(nome, "include")) {
                                 /* essas 2 linhas podem dar problema na 
                                  * compilação se elas pegarem #define das
