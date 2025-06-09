@@ -66,7 +66,8 @@ print_line(FILE *f, char str[])
 {
         size_t i;
         for (i = 0; str[i] != '\n'; i++) {
-                putc(str[i], f);
+                if (str[i] != '\0')
+                        putc(str[i], f);
         }
         if (i > 0 && i < BUFFER_SIZE && is_new_token(str[i - 1], str[i + 1]))
                 putc(' ', f);
@@ -523,7 +524,10 @@ void substituir_macros_final(char str[]){
 
 void get_system_include(char str[], FILE *fout)
 {
-        char buffer[1000000] = {'\0'};
+        char *buffer = calloc(1000000, sizeof(char));
+        if (!buffer) {
+                printf("NAO FOI POSSIVEL ALOCAR\n");
+        }
         FILE *fin;
         char file[256] = {'\0'};
         char *db[4] = 
@@ -540,13 +544,22 @@ void get_system_include(char str[], FILE *fout)
                 if ((fin = fopen(file, "r")))
                         break;
         }
-        read_file(fin, buffer);
-        remove_comments(buffer);
-        remove_space(buffer);
-        size_t len = strlen(buffer);
-        for (size_t i = 0; i < len; i++)
-                putc(buffer[i], fout);
-        putc('\n', fout);
+        if (fin) {
+                printf("FILE: %s\n", file);
+                read_file(fin, buffer);
+                remove_comments(buffer);
+                remove_space(buffer);
+                process_directives(buffer, fout);
+                size_t len = strlen(buffer);
+                for (size_t i = 0; i < len; i++) {
+                        if (buffer[i] != '\0')
+                                putc(buffer[i], fout);
+                }
+                putc('\n', fout);
+        } else {
+                printf("NAO ABRIU: %s\n", file);
+        }
+        free(buffer);
 }
 
 void get_user_include(char str[], FILE *fout)
@@ -568,70 +581,59 @@ void get_user_include(char str[], FILE *fout)
         /* esse bloco de codigo pode virar uma função,
          * process_file ou algo do tipo
          */
-        print_line(fin, str);
         process_file(fin, fout);
-}
-
-void get_local_include(char str[])
-{
-        FILE *f = fopen(str, "r");
-        if (f == NULL) {
-                fprintf(stderr, "Não foi possível abrir o arquivo %s\n", str);
-        }
-        FILE *fout = fopen("teste.c", "w");
-        char *buffer = malloc(sizeof(char) * 1000000);
-        char c;
-        int i = 0;
-        while ((c = getc(f)) != EOF) 
-                buffer[i++] = c;
-        remove_comments(buffer);
-        remove_space(buffer);
-        i = 0;
-        while ((c = buffer[i++]) != '\0')
-                putc(c, fout);
-        fclose(fout);
-        free(buffer);
-        
 }
 
 void get_include(const char str[], FILE *fout)
 {
         char file[64] = {'\0'};
-        if (str[0] == '<') {
-                sscanf(str, "<%[A-Za-z_0-9.]", file);
-                printf("nome<: %s\n", file);
-                get_system_include(file, fout);
-        } else if (str[0] == '\"') {
-                sscanf(str, "\"%[^\"]", file);
-                printf("nome\": %s\n", file);
-                get_user_include(file, fout);
+        sscanf(str, " %[^\n]", file);
+        size_t len = strlen(file);
+        if (file[0] == '<') {
+                file[0] = file[len - 1] = '\0';
+                get_system_include(file + 1, fout);
+        } else if (file[0] == '\"') {
+                file[0] = file[len - 1] = '\0';
+                get_user_include(file + 1, fout);
+        } else {
+                fprintf(stderr, "ERRO: arquivo %s não encontrado.\n", file);
+                exit(EXIT_FAILURE);
         }
 }
 
 void process_directives(char str[], FILE *f)
 {
-        size_t len = strlen(str);
-        char linha[256] = {'\0'};
-        char nome[16] = {'\0'};
+        size_t len = strlen(str), size = 1000;
+        char *linha = calloc(size, sizeof(char));
+        if (!linha) {
+                printf("NAO FOI POSSIVEL ALOCAR\n");
+        }
+        char nome[128] = {'\0'};
         char c;
         size_t i = 0;
         size_t count = 0;
         while (count < len) {
-                while ((c = str[count++]) != '\n')
-                        linha[i++] = c;
+                while ((c = str[count++]) != '\n') {
+                        if (i >= size) {
+                                size *= 2;
+                                linha = realloc(linha, size);
+                        }
+                        if (c != '\0')
+                                linha[i++] = c;
+                }
                 linha[i] = '\0';
                 if (linha[0] == '#') {
                         sscanf(linha, "# %[A-Za-z_0-9]", nome);
+                        count -= strlen(linha) + 1;
+                        ignore_until_newline(str, &count);
                         if (!strcmp(nome, "define")) {
-                                save_macro(i+7,str);
+                                // save_macro(i+7,str);
                         } else if (!strcmp(nome, "include")) {
                                 /* essas 2 linhas podem dar problema na 
                                  * compilação se elas pegarem #define das
                                  * bibliotecas padrão pois elas apagam
                                  * os diretorios da string
                                  */
-                                count -= strlen(linha) + 1;
-                                ignore_until_newline(str, &count);
                                 get_include(linha + 8, f);
                         } else if (!strcmp(nome, "ifdef")) {
                                 ;
@@ -644,16 +646,21 @@ void process_directives(char str[], FILE *f)
                 i = 0;
         }
         organize_buffer(str);
+        free(linha);
 }
 
 void
 process_file(FILE *fin, FILE *fout)
 {
-        char buffer[1000000] = {'\0'};
+        char *buffer = calloc(1000000, sizeof(char));
+        if (!buffer) {
+                printf("NAO FOI POSSIVEL ALOCAR\n");
+        }
         read_file(fin, buffer);
         remove_comments(buffer);
         remove_space(buffer);
         process_directives(buffer, fout);
+        free(buffer);
 }
 
 int
