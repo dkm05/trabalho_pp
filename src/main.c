@@ -6,21 +6,11 @@
 #include "tokens.h"
 #include "funcoes.h"
 
-
-
 /* global variables */
 bool is_string_ = false;
 int numero_de_macros=0;
 int tamanho_vetor_de_macros=0;
 Macro **vetor_macro=NULL;
-
-
-
-
-
-
-
-
 
 void
 die(const char *str)
@@ -198,13 +188,10 @@ bool is_simple_macro(int i,const char str[]){
         int length=(int)strlen(str);
         int k=0;
         puts("is simple 1");
-        //printf("primeiro char: %c\n",str[i+k]);
         while(str[i+k] != ' ' && str[i+k] != '(' && (i+k)<length && str[i+k] != '\t'){
-                //printf("%c\n",str[i+k]);
                 k++;
         }
         puts("is simple 2");
-        //printf("%c\n",str[i+k]);
         if(str[i+k] == '('){
                 puts("is simple 2,5");
                 return false;
@@ -222,19 +209,14 @@ void save_macro(int i, const char str[]){
         die("Falha ao alocar memória para Macro");
     }  
         temp->disponibilidade = OCUPADO;
-        //puts("save macro 1");
         while((str[i] == ' ' || str[i] == '\t' )&& i<(int)strlen(str)){
                 printf("%c\n",str[i]);
                 i++;
         }
-        //printf("%c\n",str[i]);
-        //puts("save macro 1,5");
         if(is_simple_macro(i,str)){
-                //puts("save macro 2");
                 i++;
                 temp->simples=1;
                 temp->qtd_param=0;
-                //printf("%c\n",str[i+k]);
                 while(str[i+k]!=' ' && str[i+k]!='\t' ){
                         temp->id[j]=str[i+k];
                         k++;j++;
@@ -261,8 +243,6 @@ void save_macro(int i, const char str[]){
                 puts("save macro 6");
                 remove_space(temp->value);
                 remove_space(temp->id);
-                // temp->id[sizeof(temp->id) - 1] = '\0';
-                // temp->value[sizeof(temp->value) - 1] = '\0';
                 inserir_macro(temp);
                 puts("save macro 7");
         }else{
@@ -314,7 +294,6 @@ void save_macro(int i, const char str[]){
                                 printf("parametrotemp salvo no vetor: %s\n",temp->parametros[n]);
                                 n++;
                                 memset(parametrotemp, 0, sizeof(parametrotemp));
-                                //puts("parametrotemp copiado e limpo");
                                 k++;    //pula a virgula
                                 j=0;    //volta pro inicio
                         }
@@ -342,14 +321,7 @@ void save_macro(int i, const char str[]){
                 printf("valor lido antes: %s\n",temp->value); 
                 remove_space(temp->value);
                 printf("valor lido: %s\n",temp->value);        
-                // while (j<BUFFER_SIZE){}{
-                //         temp->value[j++]='\0';
-                // }
-                // puts("macro com parametros 16");
-                //remove_space(temp->value);
-                // for(int z=0;z<=n;z++){
-                //         remove_space(temp->parametros[z]);
-                // }
+
                 puts("macro com parametros 18");
                 for(int h;h<temp->qtd_param;h++){
                         remove_space(temp->parametros[h]);
@@ -418,8 +390,6 @@ remove_space(char str[])
         organize_buffer(str);
 }
 
-
-
 void
 get_name(char dest[], char str[], size_t len)
 {
@@ -432,60 +402,29 @@ get_name(char dest[], char str[], size_t len)
         dest[len] = '\0';
 }
 
-// void
-// substituir_macros(char str[])
-// {
-//         size_t word_len = 0, len = strlen(str);
-//         char word[64] = {'\0'};
-//         for (size_t i = 0; i < len; i++) {
-//                 if (is_string(str, i))
-//                         continue;
-//                 if (is_token_char(str[i])) {
-//                         word_len++;
-//                 } else if (word_len > 0) {
-//                         get_name(word, str + i - word_len, word_len);
-//                         printf("aux: %s\n", word);
-//                         // joga esse loop em uma função
-//                         for (int j = 0; j < numero_de_macros; j++) {
-//                         if (!strcmp(word,vetor_macro[j]->id)){       //fazer a substituição de valor
-//                                 printf("macro %s achado\n", word);
-//                                 }
-//                         }
-//                         word_len = 0;
-//                 }
-//         }
-// }
-
 //acha macros,salva no vetor_macro, e apaga da string substituindo os caracteres por \0
 void find_macros_leitura(char str[]){
         puts("ok 1");
         int i=0;
         int ret;
         int length = (int)strlen(str);  
-        //char aux[BUFFER_SIZE]={'\0'};
         for(i=0;i<length;i++){
                 if(str[i] == '#'){
-                        //printf("ok loop %d\n",i);
                         if(is_macro(i,str,&ret)){
                                 puts("ok 4");
                                 save_macro(i+7+ret,str);//pos do # + 7 digitos(define) + ret(consequentes espaços pulados em is_macro)
                                 puts("ok 5");
                                 int aux =i;
                                 while( str[aux]!='\n' && aux < length){
-                                        //printf("%c\n",str[aux]);
                                         str[aux]='\0';
                                         aux++;                    //tira os defines do arquivo
                                 }
-                                puts("ok 5,5");
-                                puts("ok 6");
-                                //printf("%s",str);
-                        }//else if(is_include(i,str)){
-
-                        // }
+                        }
                 }
         }
         organize_buffer(str);
 }
+
 void free_macro(){
         for (int i = 0; i < numero_de_macros; i++) {
     if (vetor_macro[i]->simples == 0 && vetor_macro[i]->parametros) {
@@ -529,6 +468,11 @@ void substituir_macros_final(char str[]){
 
 void get_system_include(char str[], FILE *fout)
 {
+        /* tamanho alto para garantir que não vai 
+        * faltar espaço... isso seria resolvido se tivessemos usado 
+        * vetor dinamico. tem um exemplo de implementação na branch
+        * "vetor dinamico" (apenas remove espacos e comentarios)
+        */
         char *buffer = calloc(1000000, sizeof(char));
         if (!buffer) {
                 printf("NAO FOI POSSIVEL ALOCAR\n");
@@ -570,22 +514,12 @@ void get_system_include(char str[], FILE *fout)
 void get_user_include(char str[], FILE *fout)
 {
         FILE *fin = fopen(str, "r");
-        /* esse tamanho arbitrário pode ser resolvido
-         * se usar um vetor dinamico, se der tempo...
-         */
-        char file[256];
-        /* pode botar numa header depois
-         * e usar uma db de acordo com o sistema
-         */
-
+        
         if (!fin) {
                 get_system_include(str, fout);
                 return;
         }
-
-        /* esse bloco de codigo pode virar uma função,
-         * process_file ou algo do tipo
-         */
+        
         process_file(fin, fout);
 }
 
@@ -612,6 +546,7 @@ void process_directives(char str[], FILE *f)
         char *linha = calloc(size, sizeof(char));
         if (!linha) {
                 printf("NAO FOI POSSIVEL ALOCAR\n");
+                exit(EXIT_FAILURE);
         }
         char nome[128] = {'\0'};
         char c;
@@ -628,31 +563,12 @@ void process_directives(char str[], FILE *f)
                 }
                 linha[i] = '\0';
                 if (linha[0] == '#') {
-                        // int ret;
-                        // int i=0;
                         sscanf(linha, "# %[A-Za-z_0-9]", nome);
                         count -= strlen(linha) + 1;
                         ignore_until_newline(str, &count);
                         if(!strcmp(nome, "define")){
-                                // int length = (int)strlen(linha);
-                                // puts("ok 4");
-                                // save_macro(i+7+ret,linha);//pos do # + 7 digitos(define) + ret(consequentes espaços pulados em is_macro)
-                                // puts("ok 5");
-                                // int aux =i;
-                                // while( linha[aux]!='\n' && aux < length){
-                                //         //printf("%c\n",str[aux]);
-                                //         linha[aux]='\0';
-                                //         aux++;                    //tira os defines do arquivo
-                                // }
-                                // puts("ok 5,5");
-                                // puts("ok 6");
-                                // //printf("%s",str);
+                                ; // faz algo
                         } else if (!strcmp(nome, "include")) {
-                                /* essas 2 linhas podem dar problema na 
-                                 * compilação se elas pegarem #define das
-                                 * bibliotecas padrão pois elas apagam
-                                 * os diretorios da string
-                                 */
                                 get_include(linha + 8, f);
                         } else if (!strcmp(nome, "ifdef")) {
                                 ;
@@ -816,44 +732,11 @@ main(int argc, char *argv[])
                 die("Erro ao criar o arquivo de saída.");
 
         process_file(fin, fout);
-        return 0;
-        puts("ok main 1");
-        
-        puts("ok main 3");
-        
-        puts("ok main 4");
-        
-        // for(size_t z=0;z<strlen(str);z++){
-        //         printf("%c",str[z]);
-        // }
 
-        puts("ok main 6");
-
-        // substituir_macros(str);
-        puts("ok main 5");
-        
-        // print_line(fout, str);
-        puts("ok main 7");
-        
-        for (int i = 0; i < numero_de_macros; i++)
-        {
-                
-                printf("id[%d]: %s\n",i,vetor_macro[i]->id);
-                if(vetor_macro[i]->qtd_param>0){
-                        
-                        for(int j=0;j<vetor_macro[i]->qtd_param;j++){
-                                printf("parametro[%d]: %s\n",j,vetor_macro[i]->parametros[j]);
-                }
-                }
-                printf("valor[%d]: %s\n",i,vetor_macro[i]->value);
-        }
-        
         fclose(fin);
-        puts("ok main 8");
         // nao tem problema de fechar stdout aqui
         fclose(fout);
         free_macro();
-        puts("tudo rodando");
-        
+
         return 0;
 }
