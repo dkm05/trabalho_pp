@@ -240,6 +240,7 @@ void save_macro(int i, const char str[]){
                         k++;j++;
                 }
                 k++; // pula o ' '
+                printf("id[%d]: %s\n",numero_de_macros,temp->id);
                 while(j<BUFFER_SIZE){
                         temp->id[j++]='\0';
                 }
@@ -328,7 +329,8 @@ void save_macro(int i, const char str[]){
                 k++;    //pula ')'
                 j=0;    //pos do corpo
                 puts("macro com parametros 13");
-                while (str[i + k] == ' ') k++;  //pula espaços
+                while (str[i + k] == ' ') k++;
+                k--;  //pula espaços
                 puts("macro com parametros 14");
                 while (str[i + k] != '\0' && str[i + k] != '\n') {
                         temp->value[j++] = str[i + k++];
@@ -337,6 +339,7 @@ void save_macro(int i, const char str[]){
                 while(j<BUFFER_SIZE){
                        temp->value[j++] = '\0';
                 }
+                printf("valor lido antes: %s\n",temp->value); 
                 remove_space(temp->value);
                 printf("valor lido: %s\n",temp->value);        
                 // while (j<BUFFER_SIZE){}{
@@ -622,25 +625,25 @@ void process_directives(char str[], FILE *f)
                 }
                 linha[i] = '\0';
                 if (linha[0] == '#') {
-                        int ret;
-                        int i=0;
+                        // int ret;
+                        // int i=0;
                         sscanf(linha, "# %[A-Za-z_0-9]", nome);
                         count -= strlen(linha) + 1;
                         ignore_until_newline(str, &count);
-                        if(is_macro(i,str,&ret)){
-                                int length = (int)strlen(linha);
-                                puts("ok 4");
-                                save_macro(i+7+ret,str);//pos do # + 7 digitos(define) + ret(consequentes espaços pulados em is_macro)
-                                puts("ok 5");
-                                int aux =i;
-                                while( str[aux]!='\n' && aux < length){
-                                        //printf("%c\n",str[aux]);
-                                        str[aux]='\0';
-                                        aux++;                    //tira os defines do arquivo
-                                }
-                                puts("ok 5,5");
-                                puts("ok 6");
-                                //printf("%s",str);
+                        if(!strcmp(nome, "define")){
+                                // int length = (int)strlen(linha);
+                                // puts("ok 4");
+                                // save_macro(i+7+ret,linha);//pos do # + 7 digitos(define) + ret(consequentes espaços pulados em is_macro)
+                                // puts("ok 5");
+                                // int aux =i;
+                                // while( linha[aux]!='\n' && aux < length){
+                                //         //printf("%c\n",str[aux]);
+                                //         linha[aux]='\0';
+                                //         aux++;                    //tira os defines do arquivo
+                                // }
+                                // puts("ok 5,5");
+                                // puts("ok 6");
+                                // //printf("%s",str);
                         } else if (!strcmp(nome, "include")) {
                                 /* essas 2 linhas podem dar problema na 
                                  * compilação se elas pegarem #define das
@@ -672,6 +675,7 @@ process_file(FILE *fin, FILE *fout)
         read_file(fin, buffer);
         remove_comments(buffer);
         remove_space(buffer);
+        find_macros_leitura(buffer);
         process_directives(buffer, fout);
         free(buffer);
 }
