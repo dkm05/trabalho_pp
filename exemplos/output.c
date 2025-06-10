@@ -1,0 +1,1 @@
+int main(){int a,b,c,d;int xas=20;int yawd=20;{int aux=yawd;yawd=xas;xas=aux;}char string[]="isso e uma string";char outra_string[]="abc                  d";printf("   \n    ");char e[]="/**   */     //";char f='\n';return 0;}

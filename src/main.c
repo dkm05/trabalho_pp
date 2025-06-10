@@ -432,29 +432,29 @@ get_name(char dest[], char str[], size_t len)
         dest[len] = '\0';
 }
 
-void
-substituir_macros(char str[])
-{
-        size_t word_len = 0, len = strlen(str);
-        char word[64] = {'\0'};
-        for (size_t i = 0; i < len; i++) {
-                if (is_string(str, i))
-                        continue;
-                if (is_token_char(str[i])) {
-                        word_len++;
-                } else if (word_len > 0) {
-                        get_name(word, str + i - word_len, word_len);
-                        printf("aux: %s\n", word);
-                        // joga esse loop em uma função
-                        for (int j = 0; j < numero_de_macros; j++) {
-                        if (!strcmp(word,vetor_macro[j]->id)){       //fazer a substituição de valor
-                                printf("macro %s achado\n", word);
-                                }
-                        }
-                        word_len = 0;
-                }
-        }
-}
+// void
+// substituir_macros(char str[])
+// {
+//         size_t word_len = 0, len = strlen(str);
+//         char word[64] = {'\0'};
+//         for (size_t i = 0; i < len; i++) {
+//                 if (is_string(str, i))
+//                         continue;
+//                 if (is_token_char(str[i])) {
+//                         word_len++;
+//                 } else if (word_len > 0) {
+//                         get_name(word, str + i - word_len, word_len);
+//                         printf("aux: %s\n", word);
+//                         // joga esse loop em uma função
+//                         for (int j = 0; j < numero_de_macros; j++) {
+//                         if (!strcmp(word,vetor_macro[j]->id)){       //fazer a substituição de valor
+//                                 printf("macro %s achado\n", word);
+//                                 }
+//                         }
+//                         word_len = 0;
+//                 }
+//         }
+// }
 
 //acha macros,salva no vetor_macro, e apaga da string substituindo os caracteres por \0
 void find_macros_leitura(char str[]){
@@ -515,7 +515,10 @@ void substituir_macros_final(char str[]){
                                 k++;    //pular caracter nao desejado
                         }
                         aux[pos]=str[k];
-                        //aux[pos+1]='\0';
+                        aux[pos+1]='\0';
+                        if(strcmp(vetor_macro[i]->id,aux)){
+
+                        }
                         k++;pos++;
                 }
                 memset(aux,0,sizeof(aux));
@@ -676,16 +679,131 @@ process_file(FILE *fin, FILE *fout)
         remove_comments(buffer);
         remove_space(buffer);
         find_macros_leitura(buffer);
+        substituir_macros(buffer);
+        printf("%s",buffer);
         process_directives(buffer, fout);
         free(buffer);
+}
+
+// a: string a ser substituida, b: string que vai entrar no lugar
+int substituir_isolado_simples( char* str, const char* a, const char* b) {
+        if (!str || !a || !b)
+        return 0;
+        size_t len_str = strlen(str);
+        int len_a = (int) strlen(a);
+        int len_b = (int) strlen(b);
+        
+        if (!len_a) 
+        return 0;
+        // Primeiro, conta quantas vezes 'a' aparece em 'str'
+        int count = 0;
+        char* temp = str;
+        while ((temp = strstr(temp, a)) != NULL) {
+                // Verifica se está isolado
+                char before;
+                if(temp == str){
+                        before = '\0';
+                }else{
+                        before = *(temp - 1);
+                }
+                char after = temp[len_a];
+                if (!is_token_char(before) && !is_token_char(after)) {
+                        count++;
+                }
+                temp += len_a;
+        }
+        
+        size_t max_len = len_str + count * (len_b - len_a) + 1;
+        char* result = malloc(max_len * sizeof(char));
+        if (!result) 
+        return 0;
+        
+        const char* src = str;
+        char* dst = result;
+        
+        while (*src) {
+                if (strncmp(src, a, len_a) == 0) {
+                        char before = '\0';
+                        char after  = src[len_a];
+                        if (src != str)
+                        before = *(src - 1);
+                        
+                        if (!is_token_char(before) && !is_token_char(after)) {
+                                strcpy(dst, b);
+                                dst += len_b;
+                                src += len_a;
+                                continue;
+                        }
+                }
+                *dst++ = *src++;
+        }
+        
+        *dst = '\0';
+        strcpy(str,result);
+        return 1;
+}
+
+void substituir_macro_parametrica(char *str, Macro *macro) {
+    char *pos = str;
+    char buffer[1000000] = {0};
+    char *out = buffer;
+
+    while (*pos) {
+        if (strncmp(pos, macro->id, strlen(macro->id)) == 0 && pos[strlen(macro->id)] == '(') {
+            pos += strlen(macro->id) + 1;
+
+            // Coletar argumentos
+            char *args[macro->qtd_param];
+            for (int i = 0; i < macro->qtd_param; i++) {
+                args[i] = calloc(256, sizeof(char));
+                int j = 0;
+                while (*pos && *pos != ',' && *pos != ')') {
+                    args[i][j++] = *pos++;
+                }
+                args[i][j] = '\0';
+                if (*pos == ',') pos++; // pula a vírgula
+            }
+
+            if (*pos == ')') pos++; // pula o ')'
+
+            // Substituir no value
+            char temp[4096];
+            strcpy(temp, macro->value);
+            for (int i = 0; i < macro->qtd_param; i++) {
+                printf("%s\n", args[i]);
+                substituir_isolado_simples(temp, macro->parametros[i], args[i]);
+                free(args[i]);
+            }
+
+            // Copiar resultado expandido
+            strcpy(out, temp);
+            out += strlen(temp);
+        } else {
+            *out++ = *pos++;
+        }
+    }
+
+    *out = '\0';
+    strcpy(str, buffer);
+}
+
+void substituir_macros(char str[]){
+        for(int i= 0;i<numero_de_macros;i++){
+                if(vetor_macro[i]->simples == 1){
+                        substituir_isolado_simples(str,vetor_macro[i]->id,vetor_macro[i]->value);
+                }else{
+                        substituir_macro_parametrica(str, vetor_macro[i]);
+                }
+                
+        }
 }
 
 int
 main(int argc, char *argv[])
 {
         if (argc < 2)
-                die("usage: ./main <input.c> [<output>]");
-
+        die("usage: ./main <input.c> [<output>]");
+        
         printf("%s\n", argv[1]);
         FILE *fin = fopen(argv[1], "r");
         FILE *fout = stdout;
